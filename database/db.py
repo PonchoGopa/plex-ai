@@ -5,9 +5,9 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 from config.config import get_database_config
 
-_config = get_database_config()
+config = get_database_config()
 
-engine = create_engine(_config.connection_url, pool_pre_ping=True, future=True)
+engine = create_engine(config.connection_url, pool_pre_ping=True, future=True)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 

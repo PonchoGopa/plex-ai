@@ -1,11 +1,13 @@
 from database.db import init_db
 from database.template_repository import TemplateRepository
-from parser.xml_parser import XMLParser
+from parser.parser_factory import ParserFactory
+
+TEMPLATE_FILE = "templates/xml/Order_Price_Upload_Template.xml"
 
 init_db()
 
-parser = XMLParser()
-template = parser.parse("templates/xml/Order_Price_Upload_Template.xml")
+parser = ParserFactory.get_parser(TEMPLATE_FILE)
+template = parser.parse(TEMPLATE_FILE)
 
 repository = TemplateRepository()
 template_id = repository.save(template)
