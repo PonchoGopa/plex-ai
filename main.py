@@ -1,21 +1,30 @@
 from database.db import init_db
 from database.template_repository import TemplateRepository
+from extraction.llm_extractor import LLMExtractor
 from parser.parser_factory import ParserFactory
+from pdf.pdf_reader import PdfReader
 
 TEMPLATE_FILE = "templates/xml/Order_Price_Upload_Template.xml"
+PDF_FILE = "documents/PO_Topre.pdf"
 
 init_db()
 
-parser = ParserFactory.get_parser(TEMPLATE_FILE)
-template = parser.parse(TEMPLATE_FILE)
+# 1. Descubrir y guardar la plantilla (ya probado en etapas anteriores)
+template_parser = ParserFactory.get_parser(TEMPLATE_FILE)
+template = template_parser.parse(TEMPLATE_FILE)
 
 repository = TemplateRepository()
-template_id = repository.save(template)
+repository.save(template)
 
-print(f"Plantilla '{template.name}' guardada en MySQL con id={template_id}\n")
+# 2. Leer el PDF del cliente (texto o imagen, según corresponda)
+pdf_content = PdfReader().read(PDF_FILE)
+print(f"PDF leído: {len(pdf_content.pages)} página(s). "
+      f"Capa de texto: {'sí' if pdf_content.has_text_layer else 'no (se usará visión)'}\n")
 
-loaded = repository.find_by_name(template.name)
+# 3. Extraer datos del PDF usando el LLM, guiado por los campos de la plantilla
+extractor = LLMExtractor()
+result = extractor.extract(template, pdf_content)
 
-print(f"Plantilla recuperada desde MySQL: {loaded.name} ({len(loaded.fields)} campos)\n")
-for f in loaded.fields:
-    print(f"  {f.order:>2}. {f.name:<25} ({f.data_type}) requerido={f.required}")
+print(f"Extracción para plantilla '{result.template_name}':\n")
+for field in result.fields:
+    print(f"  {field.name:<25} = {field.value!r:<30} (confianza={field.confidence})")
