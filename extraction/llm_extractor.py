@@ -1,7 +1,7 @@
 import json
 
 from integrations.openrouter_client import OpenRouterClient
-from models.extraction import ExtractedField, ExtractionResult
+from models.extraction import ExtractedField, ExtractedRecord, ExtractionResult
 from models.template import Template
 from pdf.pdf_reader import PdfContent
 
@@ -9,14 +9,14 @@ from pdf.pdf_reader import PdfContent
 class LLMExtractor:
     """
     Construye el prompt a partir de los campos de un Template ya
-    descubierto (los mismos guardados en MySQL por el parser), y
-    le pide al LLM que devuelva JSON estructurado con un valor y
-    nivel de confianza por campo.
+    descubierto, y le pide al LLM que devuelva una LISTA de registros
+    (uno por partida/renglón encontrado en el documento), cada uno
+    con los mismos campos del template.
 
     El LLM NUNCA genera XML/CSV ni conoce reglas de negocio de Plex;
-    solo interpreta el documento y devuelve datos crudos. Toda la
-    lógica de negocio (validación, generación de archivos) vive en
-    etapas posteriores, en código Python puro.
+    solo interpreta el documento y devuelve datos crudos, replicando
+    los campos de encabezado (cliente, PO, fechas) en cada registro
+    cuando el documento tiene múltiples partidas.
     """
 
     def __init__(self, client: OpenRouterClient = None):
@@ -38,22 +38,33 @@ class LLMExtractor:
         ]
 
         raw_response = self._client.complete(messages, json_mode=True)
-        fields = self._parse_response(raw_response, field_names)
+        records = self._parse_response(raw_response, field_names)
 
-        return ExtractionResult(template_name=template.name, fields=fields)
+        return ExtractionResult(template_name=template.name, records=records)
 
     def _build_system_prompt(self, field_names: list[str]) -> str:
         fields_list = ", ".join(field_names)
         return (
             "Eres un asistente que extrae información de documentos "
-            "(órdenes de compra, facturas) para importarla a un ERP.\n"
-            "Debes devolver ÚNICAMENTE un objeto JSON con esta forma exacta, "
+            "(órdenes de compra, facturas, hojas de material) para "
+            "importarla a un ERP.\n\n"
+            "El documento puede contener UNA O VARIAS partidas/renglones "
+            "(por ejemplo, una tabla con múltiples números de parte). "
+            "Debes devolver UN REGISTRO POR CADA PARTIDA que encuentres. "
+            "Si el documento tiene datos de encabezado que aplican a todas "
+            "las partidas (cliente, número de orden, fechas), repite esos "
+            "mismos valores en cada registro.\n\n"
+            "Si el documento tiene una sola partida (o ninguna tabla), "
+            "devuelve exactamente un registro.\n\n"
+            "Devuelve ÚNICAMENTE un objeto JSON con esta forma exacta, "
             "sin texto adicional antes ni después:\n"
-            '{"fields": [{"name": "<nombre_de_campo>", "value": "<valor_o_null>", '
-            '"confidence": <numero_entre_0_y_1>}]}\n\n'
-            f"Incluye exactamente una entrada por cada uno de estos campos: {fields_list}.\n"
-            "Si un campo no aparece en el documento, usa value=null y confidence=0.0.\n"
-            "No inventes valores que no estén explícitamente en el documento."
+            '{"records": [{"fields": [{"name": "<nombre_de_campo>", '
+            '"value": "<valor_o_null>", "confidence": <numero_entre_0_y_1>}]}]}\n\n'
+            f"Cada registro debe incluir exactamente una entrada por cada uno de "
+            f"estos campos: {fields_list}.\n"
+            "Si un campo no aparece en el documento para esa partida, usa "
+            "value=null y confidence=0.0. No inventes valores que no estén "
+            "explícitamente en el documento."
         )
 
     def _build_text_content(self, pdf_content: PdfContent) -> str:
@@ -62,13 +73,13 @@ class LLMExtractor:
             for p in pdf_content.pages
             if p.text
         )
-        return f"Extrae los campos del siguiente documento:\n\n{full_text}"
+        return f"Extrae los registros del siguiente documento:\n\n{full_text}"
 
     def _build_image_content(self, pdf_content: PdfContent) -> list[dict]:
         content = [
             {
                 "type": "text",
-                "text": "Extrae los campos del siguiente documento (imagen escaneada):",
+                "text": "Extrae los registros del siguiente documento (imagen escaneada):",
             }
         ]
         for page in pdf_content.pages:
@@ -80,7 +91,7 @@ class LLMExtractor:
             )
         return content
 
-    def _parse_response(self, raw_response: str, field_names: list[str]) -> list[ExtractedField]:
+    def _parse_response(self, raw_response: str, field_names: list[str]) -> list[ExtractedRecord]:
         try:
             data = json.loads(raw_response)
         except json.JSONDecodeError as error:
@@ -88,17 +99,28 @@ class LLMExtractor:
                 f"El LLM no devolvió JSON válido: {error}\nRespuesta cruda: {raw_response}"
             )
 
-        raw_fields = {
-            item.get("name"): item
-            for item in data.get("fields", [])
-            if isinstance(item, dict)
-        }
-
-        return [
-            ExtractedField(
-                name=name,
-                value=raw_fields.get(name, {}).get("value"),
-                confidence=raw_fields.get(name, {}).get("confidence"),
+        raw_records = data.get("records", [])
+        if not raw_records:
+            raise ValueError(
+                f"El LLM no devolvió ningún registro. Respuesta cruda: {raw_response}"
             )
-            for name in field_names
-        ]
+
+        records = []
+        for raw_record in raw_records:
+            raw_fields = {
+                item.get("name"): item
+                for item in raw_record.get("fields", [])
+                if isinstance(item, dict)
+            }
+
+            fields = [
+                ExtractedField(
+                    name=name,
+                    value=raw_fields.get(name, {}).get("value"),
+                    confidence=raw_fields.get(name, {}).get("confidence"),
+                )
+                for name in field_names
+            ]
+            records.append(ExtractedRecord(fields=fields))
+
+        return records
