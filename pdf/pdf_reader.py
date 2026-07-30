@@ -6,6 +6,9 @@ import fitz  # PyMuPDF
 import pdfplumber
 
 
+MIN_MEANINGFUL_TEXT_LENGTH = 20  # umbral para descartar artefactos/ruido de OCR fantasma
+
+
 @dataclass
 class PageContent:
     page_number: int
@@ -20,19 +23,21 @@ class PdfContent:
 
     @property
     def has_text_layer(self) -> bool:
-        return any(p.text for p in self.pages)
+        return any(
+            p.text and len(p.text.strip()) >= MIN_MEANINGFUL_TEXT_LENGTH
+            for p in self.pages
+        )
 
 
 class PdfReader:
     """
     Lee un PDF y decide automáticamente la estrategia de extracción:
 
-    - Si al menos una página tiene texto real (capa de texto), se
+    - Si al menos una página tiene texto real y significativo, se
       extrae texto de todas las páginas con pdfplumber.
-    - Si NINGUNA página tiene texto (documento escaneado / impreso
-      como imagen, como PO_Topre.pdf), se rasteriza cada página con
-      PyMuPDF y se guarda como imagen base64, para que el LLM la
-      lea directamente por visión.
+    - Si NINGUNA página tiene texto útil (documento escaneado /
+      impreso como imagen), se rasteriza cada página con PyMuPDF y
+      se guarda como imagen base64, para que el LLM la lea por visión.
     """
 
     RASTER_DPI = 150
@@ -40,8 +45,9 @@ class PdfReader:
     def read(self, file_path: str) -> PdfContent:
         pages = self._extract_text_pages(file_path)
 
-        if any(p.text for p in pages):
-            return PdfContent(file_path=file_path, pages=pages)
+        content = PdfContent(file_path=file_path, pages=pages)
+        if content.has_text_layer:
+            return content
 
         rasterized_pages = self._rasterize_pages(file_path)
         return PdfContent(file_path=file_path, pages=rasterized_pages)
@@ -51,7 +57,8 @@ class PdfReader:
         with pdfplumber.open(file_path) as pdf:
             for i, page in enumerate(pdf.pages, start=1):
                 text = page.extract_text()
-                pages.append(PageContent(page_number=i, text=text, image_base64=None))
+                cleaned = text.strip() if text else None
+                pages.append(PageContent(page_number=i, text=cleaned or None, image_base64=None))
         return pages
 
     def _rasterize_pages(self, file_path: str) -> list[PageContent]:
