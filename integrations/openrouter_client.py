@@ -1,87 +1,104 @@
 import time
-
 import requests
-
-from config.config import OpenRouterConfig, get_openrouter_config
+from config.config import OpenRouterConfig
 
 
 class OpenRouterClient:
-    """
-    Cliente para la API de OpenRouter con reintentos por rate-limit
-    y, si el modelo principal sigue saturado, cambio automático a
-    modelos de respaldo (OPENROUTER_FALLBACK_MODELS).
-    """
 
-    MAX_RETRIES_PER_MODEL = 3
-    RETRY_BACKOFF_SECONDS = 8  # 8s, 16s, 32s por modelo
+    API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-    def __init__(self, config: OpenRouterConfig = None):
-        self._config = config or get_openrouter_config()
+    def __init__(self, config: OpenRouterConfig):
+        self._config = config
+        self._models = [config.model] + config.fallback_models
 
-    def complete(self, messages: list[dict], json_mode: bool = True) -> str:
-        models_to_try = [self._config.model, *self._config.fallback_models]
+    def complete(self, messages: list[dict], json_mode: bool = False) -> str:
+        """
+        Intenta completar con el modelo principal y, si falla,
+        prueba cada fallback en orden.
+        """
         last_error = None
 
-        for model in models_to_try:
+        for model in self._models:
             try:
                 return self._complete_with_model(model, messages, json_mode)
-            except requests.exceptions.HTTPError as error:
-                last_error = error
-                print(f"[OpenRouter] Modelo '{model}' agotó sus reintentos. "
-                      f"Probando siguiente modelo de respaldo (si hay)...")
-                continue
+            except _ModelNotFoundError as e:
+                # 404: este modelo no existe, pasar al siguiente SIN reintentar
+                print(f"[OpenRouter] Modelo '{model}' no encontrado (404). Probando siguiente...")
+                last_error = e
+            except _RateLimitExhaustedError as e:
+                # 429 agotado tras reintentos
+                print(f"[OpenRouter] Modelo '{model}' agotó reintentos por rate limit. Probando siguiente...")
+                last_error = e
+            except Exception as e:
+                # Error irrecuperable (401, 500, etc.) — no tiene sentido seguir con otros modelos
+                raise
 
-        raise last_error
-
-    def _complete_with_model(self, model: str, messages: list[dict], json_mode: bool) -> str:
-        payload = self._build_payload(model, messages, json_mode)
-
-        for attempt in range(1, self.MAX_RETRIES_PER_MODEL + 1):
-            response = self._post(payload)
-
-            if response.status_code == 400 and json_mode:
-                payload = self._build_payload(model, messages, json_mode=False)
-                response = self._post(payload)
-
-            if response.status_code == 429 and attempt < self.MAX_RETRIES_PER_MODEL:
-                wait_seconds = self.RETRY_BACKOFF_SECONDS * (2 ** (attempt - 1))
-                print(
-                    f"[OpenRouter] '{model}' rate-limited upstream "
-                    f"(intento {attempt}/{self.MAX_RETRIES_PER_MODEL}). "
-                    f"Reintentando en {wait_seconds}s..."
-                )
-                time.sleep(wait_seconds)
-                continue
-
-            if not response.ok:
-                raise requests.exceptions.HTTPError(
-                    f"{response.status_code} error de OpenRouter ('{model}'): {response.text}",
-                    response=response,
-                )
-
-            return response.json()["choices"][0]["message"]["content"]
-
-        raise requests.exceptions.HTTPError(
-            f"'{model}' siguió respondiendo 429 tras {self.MAX_RETRIES_PER_MODEL} intentos."
+        raise RuntimeError(
+            f"Todos los modelos fallaron. Último error: {last_error}"
         )
 
-    def _build_payload(self, model: str, messages: list[dict], json_mode: bool) -> dict:
-        payload = {
+    def _complete_with_model(
+        self, model: str, messages: list[dict], json_mode: bool
+    ) -> str:
+        """
+        Llama a un modelo específico con reintentos solo ante 429.
+        """
+        headers = {
+            "Authorization": f"Bearer {self._config.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/plex-ai",
+            "X-Title": "plex-ai",
+        }
+
+        body: dict = {
             "model": model,
             "messages": messages,
         }
         if json_mode:
-            payload["response_format"] = {"type": "json_object"}
-        return payload
+            body["response_format"] = {"type": "json_object"}
 
-    def _post(self, payload: dict):
-        headers = {
-            "Authorization": f"Bearer {self._config.api_key}",
-            "Content-Type": "application/json",
-        }
-        return requests.post(
-            f"{self._config.base_url}/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=90,
-        )
+        delay = self._config.retry_delay
+
+        for attempt in range(1, self._config.max_retries + 1):
+            response = requests.post(self.API_URL, headers=headers, json=body, timeout=60)
+
+            if response.status_code == 200:
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+
+            if response.status_code == 404:
+                raise _ModelNotFoundError(
+                    f"Modelo '{model}' no encontrado: {response.text}"
+                )
+
+            if response.status_code == 429:
+                if attempt < self._config.max_retries:
+                    print(
+                        f"[OpenRouter] '{model}' rate-limited (intento {attempt}/{self._config.max_retries})."
+                        f" Reintentando en {delay}s..."
+                    )
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                # Agotó todos los reintentos
+                raise _RateLimitExhaustedError(
+                    f"'{model}' agotó {self._config.max_retries} reintentos por rate limit."
+                )
+
+            # Cualquier otro error HTTP → irrecuperable
+            response.raise_for_status()
+
+        # No debería llegar aquí, pero por si acaso
+        raise RuntimeError(f"Loop de reintentos terminó inesperadamente para '{model}'")
+
+# ---------------------------------------------------------------------------
+# Excepciones internas — no deben salir del módulo; el cliente las captura
+# ---------------------------------------------------------------------------
+
+class _ModelNotFoundError(Exception):
+    """El endpoint del modelo no existe en OpenRouter (HTTP 404)."""
+
+
+class _RateLimitExhaustedError(Exception):
+    """El modelo agotó todos los reintentos por rate limit (HTTP 429)."""
+    

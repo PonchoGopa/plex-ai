@@ -1,68 +1,51 @@
 import os
 from dataclasses import dataclass, field
-
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-@dataclass(frozen=True)
+@dataclass
 class DatabaseConfig:
-    host: str
-    port: int
-    user: str
-    password: str
-    name: str
+    host: str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
+    port: int = field(default_factory=lambda: int(os.getenv("DB_PORT", "3306")))
+    name: str = field(default_factory=lambda: os.getenv("DB_NAME", "plex_ai"))
+    user: str = field(default_factory=lambda: os.getenv("DB_USER", "root"))
+    password: str = field(default_factory=lambda: os.getenv("DB_PASSWORD", ""))
 
     @property
-    def connection_url(self) -> str:
+    def url(self) -> str:
         return (
             f"mysql+pymysql://{self.user}:{self.password}"
             f"@{self.host}:{self.port}/{self.name}"
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class OpenRouterConfig:
-    api_key: str
-    base_url: str
-    model: str
-    fallback_models: list[str] = field(default_factory=list)
-
-
-def get_database_config() -> DatabaseConfig:
-    return DatabaseConfig(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        name=os.getenv("DB_NAME", "plex_template"),
+    api_key: str = field(
+        default_factory=lambda: os.getenv("OPENROUTER_API_KEY", "")
     )
-
-
-def get_openrouter_config() -> OpenRouterConfig:
-    """
-    Variables esperadas:
-      OPENROUTER_API_KEY (obligatoria)
-      OPENROUTER_BASE_URL (opcional)
-      OPENROUTER_MODEL (modelo principal)
-      OPENROUTER_FALLBACK_MODELS (opcional, separados por coma;
-        se intentan en orden si el modelo principal sigue
-        saturado/rate-limited después de sus reintentos)
-    """
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        raise EnvironmentError(
-            "OPENROUTER_API_KEY no está definida. "
-            "Agrégala a tu archivo .env (ver .env.example)."
+    model: str = field(
+        default_factory=lambda: os.getenv("OPENROUTER_MODEL", "openrouter/free")
+    )
+    fallback_models: list[str] = field(
+        default_factory=lambda: _parse_fallback_models(
+            os.getenv(
+                "OPENROUTER_FALLBACK_MODELS",
+                "meta-llama/llama-3.3-70b-instruct:free,"
+                "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
+            )
         )
-
-    fallback_raw = os.getenv("OPENROUTER_FALLBACK_MODELS", "")
-    fallback_models = [m.strip() for m in fallback_raw.split(",") if m.strip()]
-
-    return OpenRouterConfig(
-        api_key=api_key,
-        base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
-        model=os.getenv("OPENROUTER_MODEL", "google/gemma-4-31b-it:free"),
-        fallback_models=fallback_models,
     )
+    max_retries: int = field(
+        default_factory=lambda: int(os.getenv("OPENROUTER_MAX_RETRIES", "3"))
+    )
+    retry_delay: int = field(
+        default_factory=lambda: int(os.getenv("OPENROUTER_RETRY_DELAY", "8"))
+    )
+
+
+def _parse_fallback_models(raw: str) -> list[str]:
+    """Parsea la lista de fallbacks separada por comas, filtrando vacíos."""
+    return [m.strip() for m in raw.split(",") if m.strip()]

@@ -1,25 +1,31 @@
 from contextlib import contextmanager
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from config.config import DatabaseConfig
 
-from config.config import get_database_config
 
-config = get_database_config()
+class Base(DeclarativeBase):
+    pass
 
-engine = create_engine(config.connection_url, pool_pre_ping=True, future=True)
 
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+def _build_engine():
+    config = DatabaseConfig()
+    return create_engine(config.url, echo=False)
 
-Base = declarative_base()
+
+engine = _build_engine()
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+
+def init_db():
+    """Crea todas las tablas si no existen."""
+    from database.orm_models import TemplateORM, TemplateFieldORM  # noqa: F401
+    Base.metadata.create_all(bind=engine)
 
 
 @contextmanager
 def get_session():
-    """
-    Context manager de sesión: hace commit si todo sale bien,
-    rollback si hay excepción, y siempre cierra la sesión.
-    """
+    """Context manager de sesión con commit/rollback automático."""
     session = SessionLocal()
     try:
         yield session
@@ -29,14 +35,3 @@ def get_session():
         raise
     finally:
         session.close()
-
-
-def init_db():
-    """
-    Crea las tablas registradas en Base.metadata si no existen.
-    Importa orm_models internamente para que las tablas queden
-    registradas en Base.metadata antes de crear el esquema.
-    """
-    from database import orm_models  # noqa: F401
-
-    Base.metadata.create_all(bind=engine)

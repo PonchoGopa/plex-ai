@@ -6,7 +6,7 @@ import fitz  # PyMuPDF
 import pdfplumber
 
 
-MIN_MEANINGFUL_TEXT_LENGTH = 20  # umbral para descartar artefactos/ruido de OCR fantasma
+MIN_MEANINGFUL_TEXT_LENGTH = 20
 
 
 @dataclass
@@ -33,11 +33,14 @@ class PdfReader:
     """
     Lee un PDF y decide automáticamente la estrategia de extracción:
 
-    - Si al menos una página tiene texto real y significativo, se
-      extrae texto de todas las páginas con pdfplumber.
-    - Si NINGUNA página tiene texto útil (documento escaneado /
-      impreso como imagen), se rasteriza cada página con PyMuPDF y
-      se guarda como imagen base64, para que el LLM la lea por visión.
+    - Si hay texto real: se extrae texto narrativo (encabezados, notas)
+      CON pdfplumber.extract_text(), Y ADEMÁS se detectan tablas con
+      pdfplumber.extract_tables(), que preservan la posición exacta
+      fila/columna de cada celda. El texto lineal por sí solo destruye
+      la alineación de tablas anchas (como calendarios de entrega),
+      mezclando valores de columnas distintas — por eso la tabla se
+      serializa aparte, con su estructura intacta.
+    - Si NO hay texto: se rasteriza a imagen para visión del LLM.
     """
 
     RASTER_DPI = 150
@@ -56,10 +59,43 @@ class PdfReader:
         pages = []
         with pdfplumber.open(file_path) as pdf:
             for i, page in enumerate(pdf.pages, start=1):
-                text = page.extract_text()
-                cleaned = text.strip() if text else None
-                pages.append(PageContent(page_number=i, text=cleaned or None, image_base64=None))
+                narrative_text = page.extract_text()
+                tables_text = self._extract_tables_as_text(page)
+
+                combined_parts = []
+                if narrative_text and narrative_text.strip():
+                    combined_parts.append(narrative_text.strip())
+                if tables_text:
+                    combined_parts.append(tables_text)
+
+                combined = "\n\n".join(combined_parts) if combined_parts else None
+                pages.append(PageContent(page_number=i, text=combined, image_base64=None))
         return pages
+
+    def _extract_tables_as_text(self, page) -> Optional[str]:
+        """
+        Serializa cada tabla detectada como filas delimitadas por '|',
+        preservando la posición exacta de cada celda (incluyendo
+        celdas vacías), para que el LLM pueda razonar correctamente
+        sobre encabezados de varias filas (ej. mes -> día -> día de
+        la semana) sin perder la alineación de columnas.
+        """
+        tables = page.extract_tables()
+        if not tables:
+            return None
+
+        blocks = []
+        for table_index, table in enumerate(tables, start=1):
+            rows_text = []
+            for row in table:
+                cells = [str(cell).strip() if cell is not None else "" for cell in row]
+                rows_text.append(" | ".join(cells))
+            blocks.append(
+                f"--- Tabla {table_index} (estructura exacta fila/columna) ---\n"
+                + "\n".join(rows_text)
+            )
+
+        return "\n\n".join(blocks)
 
     def _rasterize_pages(self, file_path: str) -> list[PageContent]:
         pages = []
