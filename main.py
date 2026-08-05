@@ -1,30 +1,36 @@
 from database.db import init_db
 from database.template_repository import TemplateRepository
-from extraction.llm_extractor import LLMExtractor
 from parser.parser_factory import ParserFactory
 from pdf.pdf_reader import PdfReader
+from pdf.mos_table_parser import parse_mos_table
 
-TEMPLATE_FILE = "templates/xml/Order_Price_Upload_Template.xml"
-PDF_FILE = "documents/PO_Topre.pdf"
-
+# 1. Inicializar DB
 init_db()
 
-template_parser = ParserFactory.get_parser(TEMPLATE_FILE)
-template = template_parser.parse(TEMPLATE_FILE)
+# 2. Parsear plantilla y guardar en MySQL
+factory = ParserFactory()
+parser = factory.get_parser("templates/xml/Price Upload.xml")
+template = parser.parse("templates/xml/Price Upload.xml")
 
 repository = TemplateRepository()
 repository.save(template)
 
-pdf_content = PdfReader().read(PDF_FILE)
-print(f"PDF leído: {len(pdf_content.pages)} página(s). "
-      f"Capa de texto: {'sí' if pdf_content.has_text_layer else 'no (se usará visión)'}\n")
+print(f"Plantilla '{template.name}' guardada. Campos: {len(template.fields)}")
 
-extractor = LLMExtractor()
-result = extractor.extract(template, pdf_content)
+# 3. Leer PDF
+reader = PdfReader()
+pdf_content = reader.read("documents/PO_Topre.pdf")
+print(f"PDF leído: {len(pdf_content.pages)} página(s). Capa de texto: {'sí' if pdf_content.has_text_layer else 'no'}")
 
-print(f"Extracción para plantilla '{result.template_name}': {len(result.records)} registro(s)\n")
-for i, record in enumerate(result.records, start=1):
-    print(f"--- Registro {i} ---")
-    for f in record.fields:
-        print(f"  {f.name:<25} = {f.value!r:<30} (confianza={f.confidence})")
-    print()
+# 4. Pre-procesar tabla calendario con Python (sin LLM)
+records = parse_mos_table(pdf_content)
+
+print(f"\nTotal de registros extraídos: {len(records)}")
+print()
+
+for i, rec in enumerate(records, 1):
+    print(
+        f"  [{i:02d}] {rec.part_number} | {rec.part_name} | "
+        f"Fecha: {rec.date} | BOX: {rec.quantity_box} | QTY: {rec.quantity_qty}"
+    )
+    

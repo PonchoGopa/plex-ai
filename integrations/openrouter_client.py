@@ -1,3 +1,12 @@
+"""
+Cliente para OpenRouter API.
+
+Manejo de errores:
+- 429: rate limit → reintentar con backoff exponencial
+- 404: modelo no existe → saltar al siguiente fallback SIN reintentar
+- Otros 4xx/5xx: error irrecuperable → lanzar excepción inmediatamente
+"""
+
 import time
 import requests
 from config.config import OpenRouterConfig
@@ -7,30 +16,23 @@ class OpenRouterClient:
 
     API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-    def __init__(self, config: OpenRouterConfig):
-        self._config = config
-        self._models = [config.model] + config.fallback_models
+    def __init__(self, config: OpenRouterConfig = None):
+        self._config = config or OpenRouterConfig()
+        self._models = [self._config.model] + self._config.fallback_models
 
     def complete(self, messages: list[dict], json_mode: bool = False) -> str:
-        """
-        Intenta completar con el modelo principal y, si falla,
-        prueba cada fallback en orden.
-        """
         last_error = None
 
         for model in self._models:
             try:
                 return self._complete_with_model(model, messages, json_mode)
             except _ModelNotFoundError as e:
-                # 404: este modelo no existe, pasar al siguiente SIN reintentar
                 print(f"[OpenRouter] Modelo '{model}' no encontrado (404). Probando siguiente...")
                 last_error = e
             except _RateLimitExhaustedError as e:
-                # 429 agotado tras reintentos
                 print(f"[OpenRouter] Modelo '{model}' agotó reintentos por rate limit. Probando siguiente...")
                 last_error = e
-            except Exception as e:
-                # Error irrecuperable (401, 500, etc.) — no tiene sentido seguir con otros modelos
+            except Exception:
                 raise
 
         raise RuntimeError(
@@ -40,9 +42,6 @@ class OpenRouterClient:
     def _complete_with_model(
         self, model: str, messages: list[dict], json_mode: bool
     ) -> str:
-        """
-        Llama a un modelo específico con reintentos solo ante 429.
-        """
         headers = {
             "Authorization": f"Bearer {self._config.api_key}",
             "Content-Type": "application/json",
@@ -60,11 +59,14 @@ class OpenRouterClient:
         delay = self._config.retry_delay
 
         for attempt in range(1, self._config.max_retries + 1):
-            response = requests.post(self.API_URL, headers=headers, json=body, timeout=60)
+            print(f"[OpenRouter] Llamando a '{model}' (intento {attempt}/{self._config.max_retries})... espera hasta 5 min.")
+            response = requests.post(self.API_URL, headers=headers, json=body, timeout=300)
 
             if response.status_code == 200:
                 data = response.json()
-                return data["choices"][0]["message"]["content"]
+                content = data["choices"][0]["message"]["content"]
+                print(f"[OpenRouter] Respuesta recibida de '{model}' ({len(content)} chars).")
+                return content
 
             if response.status_code == 404:
                 raise _ModelNotFoundError(
@@ -80,19 +82,17 @@ class OpenRouterClient:
                     time.sleep(delay)
                     delay *= 2
                     continue
-                # Agotó todos los reintentos
                 raise _RateLimitExhaustedError(
                     f"'{model}' agotó {self._config.max_retries} reintentos por rate limit."
                 )
 
-            # Cualquier otro error HTTP → irrecuperable
             response.raise_for_status()
 
-        # No debería llegar aquí, pero por si acaso
         raise RuntimeError(f"Loop de reintentos terminó inesperadamente para '{model}'")
 
+
 # ---------------------------------------------------------------------------
-# Excepciones internas — no deben salir del módulo; el cliente las captura
+# Excepciones internas
 # ---------------------------------------------------------------------------
 
 class _ModelNotFoundError(Exception):
@@ -101,4 +101,3 @@ class _ModelNotFoundError(Exception):
 
 class _RateLimitExhaustedError(Exception):
     """El modelo agotó todos los reintentos por rate limit (HTTP 429)."""
-    
