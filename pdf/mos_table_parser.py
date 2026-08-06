@@ -15,22 +15,93 @@ Estructura esperada de la tabla MOS:
 
 from __future__ import annotations
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pdf.pdf_reader import PdfContent
 
 
+# ── Dataclasses públicos ──────────────────────────────────────────────────────
+
 @dataclass
 class MosRecord:
-    part_number: str
-    part_name: str
-    model: str
-    snp: str
-    date: str          # DD/MM/YYYY
+    part_number:  str
+    part_name:    str
+    model:        str
+    snp:          str
+    date:         str           # DD/MM/YYYY
     quantity_box: int | None
     quantity_qty: int | None
 
+    # Aliases para que el motor de validaciones use nombres consistentes
+    @property
+    def box(self) -> int | None:
+        return self.quantity_box
 
-# Meses en español → número
+    @property
+    def qty(self) -> int | None:
+        return self.quantity_qty
+
+
+@dataclass
+class MosHeader:
+    customer:   str = ""
+    po_number:  str = ""
+
+
+# ── Clase principal (nueva) ───────────────────────────────────────────────────
+
+class MosTableParser:
+    """
+    Wrapper orientado a objetos sobre la función parse_mos_table.
+    Permite instanciarlo y llamar .parse(tables) desde main.py
+    de forma consistente con el resto de parsers del proyecto.
+    """
+
+    def parse(self, tables: list) -> list[MosRecord]:
+        """
+        Recibe la lista de tablas devuelta por PdfReader
+        y retorna los MosRecord encontrados.
+        """
+        if not tables:
+            return []
+        # PdfReader devuelve PdfContent; si ya viene la lista de tablas
+        # la envolvemos en un objeto compatible.
+        pseudo_content = _PseudoContent(tables)
+        return parse_mos_table(pseudo_content)
+
+
+# ── Adaptador interno ─────────────────────────────────────────────────────────
+
+class _PseudoContent:
+    """
+    Adapta la lista plana de tablas que entrega PdfReader
+    a la interfaz que espera parse_mos_table (PdfContent con .pages).
+    """
+
+    def __init__(self, tables: list):
+        # Unir todas las filas de todas las tablas en un único texto con ' | '
+        lines = []
+        for table in tables:
+            if isinstance(table, list):
+                for row in table:
+                    if isinstance(row, list):
+                        line = " | ".join(
+                            (cell if cell is not None else "") for cell in row
+                        )
+                        lines.append(line)
+            elif isinstance(table, str):
+                lines.append(table)
+
+        joined = "\n".join(lines)
+        self.pages = [_PseudoPage(joined)]
+
+
+class _PseudoPage:
+    def __init__(self, text: str):
+        self.text = text
+
+
+# ── Meses en español → número ─────────────────────────────────────────────────
+
 _MONTH_MAP = {
     "enero": 1, "febrero": 2, "marzo": 3, "abril": 4,
     "mayo": 5, "junio": 6, "julio": 7, "agosto": 8,
@@ -39,16 +110,16 @@ _MONTH_MAP = {
     "ene.": 1, "feb.": 2,
 }
 
-# Columnas fijas antes de los días
-_FIXED_COLS = 4   # Part Number | Model | SNP | Item
+_FIXED_COLS       = 4
+_VALID_DAYS       = set(range(1, 32))
+_AGGREGATE_TOKENS = {
+    "total", "sep.", "oct.", "nov.", "dic.",
+    "ene.", "feb.", "mar.", "abr.", "may.",
+    "jun.", "jul.", "ago.",
+}
 
-# Días válidos de un mes (para filtrar columnas de agregado)
-_VALID_DAYS = set(range(1, 32))
 
-# Palabras que indican columna de agregado (no fecha puntual)
-_AGGREGATE_TOKENS = {"total", "sep.", "oct.", "nov.", "dic.", "ene.", "feb.",
-                     "mar.", "abr.", "may.", "jun.", "jul.", "ago."}
-
+# ── Función original (conservada intacta) ─────────────────────────────────────
 
 def parse_mos_table(pdf_content: PdfContent) -> list[MosRecord]:
     """
@@ -70,25 +141,19 @@ def parse_mos_table(pdf_content: PdfContent) -> list[MosRecord]:
     return _extract_records(rows, date_columns)
 
 
-# ---------------------------------------------------------------------------
-# Helpers privados
-# ---------------------------------------------------------------------------
+# ── Helpers privados (sin cambios) ────────────────────────────────────────────
 
-def _extract_table_text(pdf_content: PdfContent) -> str:
-    """Extrae el bloque de texto de la tabla (el que tiene ' | ')."""
+def _extract_table_text(pdf_content) -> str:
     for page in pdf_content.pages:
         if page.text and " | " in page.text:
-            # Busca el bloque que empieza con la tabla
             for line in page.text.split("\n"):
                 if "Part Number" in line and "|" in line:
-                    # Retorna desde esta línea hacia adelante
                     idx = page.text.index(line)
                     return page.text[idx:]
     return ""
 
 
 def _split_rows(table_text: str) -> list[list[str]]:
-    """Convierte texto con ' | ' en lista de listas de celdas."""
     rows = []
     for line in table_text.split("\n"):
         if " | " in line or line.startswith(" |"):
@@ -98,39 +163,24 @@ def _split_rows(table_text: str) -> list[list[str]]:
 
 
 def _build_date_column_map(rows: list[list[str]]) -> dict[int, str]:
-    """
-    Construye un dict {índice_columna: "DD/MM/YYYY"} para cada columna
-    que representa un día puntual (no agregado mensual).
-
-    Lógica:
-    - Fila con mes/año: determina el mes y año activos para el bloque siguiente
-    - Fila con números de día: mapea índice → día
-    - Combina día + mes + año → fecha
-    """
-    # Encontrar la fila de días (contiene "1", "2", ..., "31")
     day_row_idx = None
-    month_year_row_idx = None
 
-    for i, row in enumerate(rows[:8]):  # solo buscar en las primeras 8 filas
+    for i, row in enumerate(rows[:8]):
         nums = [c for c in row if c.isdigit() and 1 <= int(c) <= 31]
-        if len(nums) >= 20:  # suficientes días para ser la fila de días
+        if len(nums) >= 20:
             day_row_idx = i
             break
 
     if day_row_idx is None:
         return {}
 
-    # La fila de mes/año está justo antes de la de días
     month_year_row_idx = day_row_idx - 1
-
-    # Parsear mes/año de la fila correspondiente
     month_year_row = rows[month_year_row_idx] if month_year_row_idx >= 0 else []
     current_month, current_year = _extract_month_year(month_year_row)
 
     if current_month is None or current_year is None:
         return {}
 
-    # Mapear columnas
     day_row = rows[day_row_idx]
     date_map: dict[int, str] = {}
 
@@ -138,7 +188,6 @@ def _build_date_column_map(rows: list[list[str]]) -> dict[int, str]:
         if col_idx < _FIXED_COLS:
             continue
         cell_lower = cell.lower().strip()
-        # Es un número de día válido y no es un token de agregado
         if cell.isdigit() and int(cell) in _VALID_DAYS and cell_lower not in _AGGREGATE_TOKENS:
             day = int(cell)
             date_str = f"{day:02d}/{current_month:02d}/{current_year}"
@@ -148,29 +197,22 @@ def _build_date_column_map(rows: list[list[str]]) -> dict[int, str]:
 
 
 def _extract_month_year(row: list[str]) -> tuple[int | None, int | None]:
-    """Extrae mes y año de una fila como ['', '', '', '', 'agosto', '', ..., '2026', ...]."""
     month = None
-    year = None
+    year  = None
     for cell in row:
         cell_lower = cell.lower().strip()
         if cell_lower in _MONTH_MAP and month is None:
             month = _MONTH_MAP[cell_lower]
         if re.fullmatch(r"20\d{2}", cell.strip()):
             year = int(cell.strip())
-            break  # toma el primer año (el del bloque de días puntuales)
+            break
     return month, year
 
 
 def _extract_records(
     rows: list[list[str]], date_columns: dict[int, str]
 ) -> list[MosRecord]:
-    """
-    Itera las filas de datos (a partir de la fila de weekday + 1).
-    Cada partida ocupa DOS filas consecutivas: BOX y QTY.
-    """
     records: list[MosRecord] = []
-
-    # Encontrar inicio de datos: primera fila cuya col 0 parece un part number
     data_start = _find_data_start(rows)
     if data_start is None:
         return []
@@ -180,23 +222,19 @@ def _extract_records(
         box_row = rows[i]
         qty_row = rows[i + 1]
 
-        # Validar que la fila BOX tenga un part number en col 0
         part_number = box_row[0].strip() if len(box_row) > 0 else ""
         if not part_number or not _looks_like_part_number(part_number):
             i += 1
             continue
 
-        # La fila QTY tiene la descripción en col 0
         part_name = qty_row[0].strip() if len(qty_row) > 0 else ""
-        model = box_row[1].strip() if len(box_row) > 1 else ""
-        snp = box_row[2].strip() if len(box_row) > 2 else ""
+        model     = box_row[1].strip() if len(box_row) > 1 else ""
+        snp       = box_row[2].strip() if len(box_row) > 2 else ""
 
-        # Extraer valores por columna de fecha
         for col_idx, date_str in date_columns.items():
             box_val = _parse_number(box_row[col_idx]) if col_idx < len(box_row) else None
             qty_val = _parse_number(qty_row[col_idx]) if col_idx < len(qty_row) else None
 
-            # Solo generar registro si hay al menos un valor
             if box_val is not None or qty_val is not None:
                 records.append(MosRecord(
                     part_number=part_number,
@@ -208,13 +246,12 @@ def _extract_records(
                     quantity_qty=qty_val,
                 ))
 
-        i += 2  # avanzar al par siguiente
+        i += 2
 
     return records
 
 
 def _find_data_start(rows: list[list[str]]) -> int | None:
-    """Encuentra el índice de la primera fila de datos (post-encabezados)."""
     for i, row in enumerate(rows):
         if len(row) > 0 and _looks_like_part_number(row[0].strip()):
             return i
@@ -222,20 +259,14 @@ def _find_data_start(rows: list[list[str]]) -> int | None:
 
 
 def _looks_like_part_number(text: str) -> bool:
-    """Heurística: part number tiene guiones, dígitos o letras mayúsculas."""
     if not text:
         return False
-    # Excluir textos que claramente son encabezados o pie de página
-    if text.lower().startswith(("part", "brkt", "reinf", "mos", "production", "create", "<")):
-        # Las descripciones empiezan con BRKT/REINF — esas son filas QTY, no BOX
-        if text.lower().startswith(("brkt", "reinf")):
-            return False
-    # Un part number real tiene al menos un dígito
+    if text.lower().startswith(("brkt", "reinf")):
+        return False
     return bool(re.search(r'\d', text)) and len(text) >= 3
 
 
 def _parse_number(cell: str) -> int | None:
-    """Convierte '3,060' → 3060, '' → None."""
     cell = cell.strip().replace(",", "")
     if not cell:
         return None
