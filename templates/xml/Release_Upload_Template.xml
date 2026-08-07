@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Default">
+   <Alignment ss:Vertical="Bottom"/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1"/>
+  </Style>
+  <Style ss:ID="String">
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="DateFormat">
+   <NumberFormat ss:Format="General Date"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Worksheet1">
+  <Table>
+   <Column ss:AutoFitWidth="1" ss:Index="1" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="2" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="3" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="4" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="5" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="6" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="7" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="8" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="9" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="10" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="11" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="12" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="13" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="14" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="15" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="16" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="17" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="18" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="19" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="20" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="21" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="22" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="23" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="24" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="25" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="26" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="27" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="28" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="29" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="30" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="31" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="32" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="33" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="34" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="35" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="36" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="37" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="38" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="39" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="40" ss:StyleID="String"/>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Customer Code]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Ship To]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[PO No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Customer Part No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Customer Part Revision]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Part No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Part Revision]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Release No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Quantity]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Due Date]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Ship From]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Kanban No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Dock Code]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line Code]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line 11]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line 12]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line 13]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line 14]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line 15]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line 16]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Line 17]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Material Handling Code]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Reference No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Document]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI R Code]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Intermediate Consignee]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Load Sequence No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Lot No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Batch]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Order No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[EDI Dealer No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Release Type]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Vehicle ID]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Rotation]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Usepoint]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Auto Create PO]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Supplier Code]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Drop Ship PO No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Production Start Date]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Schedule Type]]></Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>

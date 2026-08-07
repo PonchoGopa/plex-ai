@@ -73,26 +73,23 @@ class MosTableParser:
 
 class _PseudoContent:
     """
-    Adapta la lista plana de tablas que entrega PdfReader
-    a la interfaz que espera parse_mos_table (PdfContent con .pages).
+    Adapta la lista de strings de páginas (texto serializado por PdfReader)
+    a la interfaz que espera parse_mos_table (.pages con .text).
     """
 
     def __init__(self, tables: list):
-        # Unir todas las filas de todas las tablas en un único texto con ' | '
         lines = []
-        for table in tables:
-            if isinstance(table, list):
-                for row in table:
+        for item in tables:
+            if isinstance(item, str):
+                lines.append(item)
+            elif isinstance(item, list):
+                for row in item:
                     if isinstance(row, list):
                         line = " | ".join(
                             (cell if cell is not None else "") for cell in row
                         )
                         lines.append(line)
-            elif isinstance(table, str):
-                lines.append(table)
-
-        joined = "\n".join(lines)
-        self.pages = [_PseudoPage(joined)]
+        self.pages = [_PseudoPage("\n".join(lines))]
 
 
 class _PseudoPage:

@@ -1,10 +1,11 @@
 """
 main.py — Orquestador principal de plex-ai.
 
-Flujo actual (Etapa 7):
+Flujo actual (Etapa 8):
   PDF → MOS Table Parser + MOS Header Parser
       → ValidationEngine
-      → imprime reporte
+      → PoLineGenerator + ReleaseGenerator
+      → output/
 """
 import logging
 from pathlib import Path
@@ -13,6 +14,7 @@ from pdf.pdf_reader import PdfReader
 from pdf.mos_table_parser import MosTableParser
 from pdf.mos_header_parser import MosHeaderParser
 from validation import ValidationEngine
+from generators import PoLineGenerator, ReleaseGenerator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,17 +32,21 @@ def main() -> None:
     # ── Lectura del PDF ───────────────────────────────────────────────────────
     reader     = PdfReader()
     pdf_result = reader.read(str(pdf_path))
-    raw_text   = pdf_result.text or ""
-    raw_tables = pdf_result.tables or []
 
-    logger.info("PDF leído: %d páginas, %d tabla(s)", pdf_result.pages, len(raw_tables))
+    raw_text = "\n".join(
+        p.text for p in pdf_result.pages if p.text
+    )
+    raw_tables = [
+        p.text for p in pdf_result.pages if p.text and "--- Tabla" in p.text
+    ]
 
-    # ── Parse de tabla calendario (determinístico) ────────────────────────────
+    logger.info("PDF leído: %d página(s)", len(pdf_result.pages))
+
+    # ── Parse ─────────────────────────────────────────────────────────────────
     table_parser = MosTableParser()
     mos_records  = table_parser.parse(raw_tables)
     logger.info("Registros extraídos: %d", len(mos_records))
 
-    # ── Parse de header (Customer + PO No) ───────────────────────────────────
     header_parser = MosHeaderParser()
     mos_header    = header_parser.parse(raw_text)
     logger.info("Header → Customer=%r  PO No=%r", mos_header.customer, mos_header.po_number)
@@ -67,13 +73,17 @@ def main() -> None:
 
     print("="*60 + "\n")
 
-    # Resumen numérico final
-    logger.info(
-        "Resultado: %d registros, %d error(es), %d advertencia(s)",
-        len(mos_records),
-        len(report.errors()),
-        len(report.warnings()),
-    )
+    # ── Generación de archivos — solo si no hay errores ───────────────────────
+    if report.has_errors:
+        logger.error("Generación cancelada: existen errores de validación.")
+        return
+
+    po_path      = PoLineGenerator().generate(mos_header, mos_records)
+    release_path = ReleaseGenerator().generate(mos_header, mos_records)
+
+    logger.info("Archivos generados:")
+    logger.info("  PO Line  → %s", po_path)
+    logger.info("  Releases → %s", release_path)
 
 
 if __name__ == "__main__":
