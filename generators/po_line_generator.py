@@ -3,7 +3,7 @@ Generador del archivo Po_Line_Upload para Plex ERP.
 
 Produce un XML SpreadsheetML con una fila por part number único.
 Campos obligatorios confirmados: Customer Code, PO No, PO Status,
-PO Type, PO Date, Terms, Customer Part No, Part No.
+PO Type, PO Date, Terms, Freight Terms, Customer Part No, Part No.
 Todos los demás campos van vacíos.
 """
 from __future__ import annotations
@@ -15,7 +15,6 @@ from pathlib import Path
 from pdf.mos_table_parser import MosHeader, MosRecord
 
 
-# Namespaces SpreadsheetML
 _NS = {
     "ss":   "urn:schemas-microsoft-com:office:spreadsheet",
     "o":    "urn:schemas-microsoft-com:office:office",
@@ -23,7 +22,6 @@ _NS = {
     "html": "http://www.w3.org/TR/REC-html40",
 }
 
-# Cabeceras en orden exacto de la plantilla (29 columnas)
 _HEADERS = [
     "Customer Code", "PO No", "PO Status", "PO Type", "PO Date",
     "Terms", "FOB", "Freight Terms", "Approved Ship To",
@@ -36,11 +34,12 @@ _HEADERS = [
     "Negotiated Place",
 ]
 
-# Índice (0-based) de cada columna obligatoria y su valor
+# Índice 0-based → valor fijo de negocio
 _FIXED_VALUES = {
     2: "Open",    # PO Status
     3: "Blanket", # PO Type
     5: "Net 30",  # Terms
+    7: "C.O.D",   # Freight Terms
 }
 
 
@@ -59,11 +58,10 @@ class PoLineGenerator:
         out_dir.mkdir(parents=True, exist_ok=True)
 
         today     = date.today()
-        po_date   = today.strftime("%m/%d/%Y")   # formato Plex
+        po_date   = today.strftime("%m/%d/%Y")
         file_name = f"PO_Line_Upload_{today.strftime('%Y%m%d')}.xml"
         out_path  = out_dir / file_name
 
-        # Una fila por part number único (orden de primera aparición)
         seen: dict[str, MosRecord] = {}
         for rec in records:
             if rec.part_number not in seen:
@@ -73,13 +71,11 @@ class PoLineGenerator:
         self._write(workbook, out_path)
         return out_path
 
-    # ── Construcción XML ──────────────────────────────────────────────────────
-
     def _build_workbook(
         self,
-        header:   MosHeader,
-        po_date:  str,
-        parts:    list[MosRecord],
+        header:  MosHeader,
+        po_date: str,
+        parts:   list[MosRecord],
     ) -> ET.Element:
         ET.register_namespace("",     _NS["ss"])
         ET.register_namespace("o",    _NS["o"])
@@ -89,20 +85,19 @@ class PoLineGenerator:
         wb = ET.Element(
             "Workbook",
             {
-                "xmlns":       _NS["ss"],
-                "xmlns:o":     _NS["o"],
-                "xmlns:x":     _NS["x"],
-                "xmlns:ss":    _NS["ss"],
-                "xmlns:html":  _NS["html"],
+                "xmlns":      _NS["ss"],
+                "xmlns:o":    _NS["o"],
+                "xmlns:x":    _NS["x"],
+                "xmlns:ss":   _NS["ss"],
+                "xmlns:html": _NS["html"],
             },
         )
 
         wb.append(self._styles())
 
-        ws = ET.SubElement(wb, "Worksheet", {"ss:Name": "Worksheet1"})
+        ws    = ET.SubElement(wb, "Worksheet", {"ss:Name": "Worksheet1"})
         table = ET.SubElement(ws, "Table")
 
-        # Columnas
         for i in range(1, len(_HEADERS) + 1):
             ET.SubElement(table, "Column", {
                 "ss:AutoFitWidth": "1",
@@ -110,10 +105,8 @@ class PoLineGenerator:
                 "ss:StyleID":      "String",
             })
 
-        # Fila de encabezados
         table.append(self._header_row())
 
-        # Filas de datos
         for rec in parts:
             table.append(self._data_row(header, po_date, rec))
 
@@ -130,15 +123,14 @@ class PoLineGenerator:
     def _data_row(
         self, header: MosHeader, po_date: str, rec: MosRecord
     ) -> ET.Element:
-        # Construir valores en orden de columna
         values = [""] * len(_HEADERS)
 
-        # Obligatorios desde header/fecha
-        values[0]  = header.customer   or ""   # Customer Code
-        values[1]  = header.po_number  or ""   # PO No
-        values[4]  = po_date                   # PO Date
-        values[10] = rec.part_number   or ""   # Customer Part No
-        values[18] = rec.part_number   or ""   # Part No
+        # Dinámicos — vienen del PDF
+        values[0]  = header.customer  or ""  # Customer Code
+        values[1]  = header.po_number or ""  # PO No
+        values[4]  = po_date                 # PO Date
+        values[10] = rec.part_number  or ""  # Customer Part No
+        values[18] = rec.part_number  or ""  # Part No
 
         # Fijos de negocio
         for col_idx, val in _FIXED_VALUES.items():
@@ -150,8 +142,6 @@ class PoLineGenerator:
             data = ET.SubElement(cell, "Data", {"ss:Type": "String"})
             data.text = val
         return row
-
-    # ── Estilos (idénticos a la plantilla original) ───────────────────────────
 
     @staticmethod
     def _styles() -> ET.Element:
@@ -171,12 +161,9 @@ class PoLineGenerator:
 
         return styles
 
-    # ── Escritura ─────────────────────────────────────────────────────────────
-
     @staticmethod
     def _write(workbook: ET.Element, path: Path) -> None:
-        tree = ET.ElementTree(workbook)
-        ET.indent(tree, space="  ")
+        ET.indent(ET.ElementTree(workbook), space="  ")
 
         header_lines = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
