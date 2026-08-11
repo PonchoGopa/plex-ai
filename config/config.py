@@ -7,10 +7,10 @@ load_dotenv()
 
 @dataclass
 class DatabaseConfig:
-    host: str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
-    port: int = field(default_factory=lambda: int(os.getenv("DB_PORT", "3306")))
-    name: str = field(default_factory=lambda: os.getenv("DB_NAME", "plex_ai"))
-    user: str = field(default_factory=lambda: os.getenv("DB_USER", "root"))
+    host:     str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
+    port:     int = field(default_factory=lambda: int(os.getenv("DB_PORT", "3306")))
+    name:     str = field(default_factory=lambda: os.getenv("DB_NAME", "plex_ai"))
+    user:     str = field(default_factory=lambda: os.getenv("DB_USER", "root"))
     password: str = field(default_factory=lambda: os.getenv("DB_PASSWORD", ""))
 
     @property
@@ -43,6 +43,28 @@ class OpenRouterConfig:
     )
     retry_delay: int = field(
         default_factory=lambda: int(os.getenv("OPENROUTER_RETRY_DELAY", "8"))
+    )
+
+
+def get_plex_db_config() -> DatabaseConfig:
+    """Base de datos principal: plex_template (plantillas Plex)."""
+    return DatabaseConfig()
+
+
+def get_kimex_db_config() -> DatabaseConfig:
+    """
+    Base de datos de producción: kimexproduction (clientes, catálogos).
+
+    Usa las mismas credenciales que plex_template (mismo servidor),
+    solo cambia el nombre de la base de datos.
+    Sobrescribible con variables KIMEX_DB_* en .env si fuera necesario.
+    """
+    return DatabaseConfig(
+        host     = os.getenv("KIMEX_DB_HOST",     os.getenv("DB_HOST",     "localhost")),
+        port     = int(os.getenv("KIMEX_DB_PORT",  os.getenv("DB_PORT",     "3306"))),
+        user     = os.getenv("KIMEX_DB_USER",     os.getenv("DB_USER",     "root")),
+        password = os.getenv("KIMEX_DB_PASSWORD", os.getenv("DB_PASSWORD", "")),
+        name     = os.getenv("KIMEX_DB_NAME",     "kimexproduction"),
     )
 
 
