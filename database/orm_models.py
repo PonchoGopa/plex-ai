@@ -1,38 +1,62 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, UniqueConstraint
-from sqlalchemy.orm import relationship
+"""
+database/orm_models.py — Modelos ORM SQLAlchemy.
+"""
+from datetime import datetime
 
-from database.db import Base
-
-
-class TemplateORM(Base):
-    __tablename__ = "templates"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(255), nullable=False, unique=True)
-    description = Column(String(500), nullable=True, default="")
-    file_type = Column(String(20), nullable=False, default="XML")
-    plex_module = Column(String(100), nullable=True, default="")
-
-    fields = relationship(
-        "TemplateFieldORM",
-        back_populates="template",
-        cascade="all, delete-orphan",
-        order_by="TemplateFieldORM.order",
-    )
+from sqlalchemy import (
+    Column, Integer, String, Text, DateTime,
+    Float, JSON
+)
+from sqlalchemy.orm import DeclarativeBase
 
 
-class TemplateFieldORM(Base):
-    __tablename__ = "template_fields"
+class Base(DeclarativeBase):
+    pass
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    template_id = Column(Integer, ForeignKey("templates.id"), nullable=False)
-    order = Column(Integer, nullable=False)
-    name = Column(String(255), nullable=False)
-    data_type = Column(String(50), nullable=False, default="String")
-    required = Column(Boolean, nullable=False, default=False)
 
-    template = relationship("TemplateORM", back_populates="fields")
+# ── Plantillas Plex ───────────────────────────────────────────────────────────
 
-    __table_args__ = (
-        UniqueConstraint("template_id", "order", name="uq_template_field_order"),
-    )
+class PlexTemplate(Base):
+    __tablename__ = "plex_templates"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    name        = Column(String(255), unique=True, nullable=False)
+    content     = Column(Text,        nullable=False)
+    file_type   = Column(String(10),  nullable=False, default="xml")
+    created_at  = Column(DateTime,    default=datetime.utcnow)
+    updated_at  = Column(DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ── Auditoría de ejecuciones ──────────────────────────────────────────────────
+
+class PipelineRun(Base):
+    """
+    Registra cada ejecución completa del pipeline.
+
+    Campos clave
+    ------------
+    status        : 'success' | 'error' | 'blocked'
+                      blocked = validación rechazó la generación
+    generated_files: lista JSON de rutas relativas de archivos creados
+    error_detail  : traza completa si status == 'error'
+    """
+    __tablename__ = "pipeline_runs"
+
+    id               = Column(Integer,  primary_key=True, autoincrement=True)
+    started_at       = Column(DateTime, nullable=False, default=datetime.utcnow)
+    finished_at      = Column(DateTime, nullable=True)
+    duration_seconds = Column(Float,    nullable=True)
+
+    customer         = Column(String(255), nullable=True)
+    po_number        = Column(String(100), nullable=True)
+    pdf_filename     = Column(String(500), nullable=True)
+
+    records_extracted = Column(Integer, nullable=True)
+    errors_count      = Column(Integer, nullable=True, default=0)
+    warnings_count    = Column(Integer, nullable=True, default=0)
+
+    status            = Column(String(20), nullable=False, default="success")
+    error_detail      = Column(Text,       nullable=True)
+
+    # Lista JSON: ["output/POT260166/po_line.xml", "output/POT260166/release.xml"]
+    generated_files   = Column(JSON, nullable=True)
