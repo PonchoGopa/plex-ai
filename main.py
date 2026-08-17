@@ -1,14 +1,16 @@
 """
 main.py — Orquestador principal de plex-ai (CLI).
 
-Flujo (Etapa 10):
+Flujo (Etapa 11):
   PDF → MOS Table Parser + MOS Header Parser
       → ValidationEngine
-      → PoLineGenerator + ReleaseGenerator
+      → PoLineGenerator + ReleaseGenerator + OrderPriceGenerator
       → Auditoría MySQL vía StructuredLogger
 """
 import logging
 from pathlib import Path
+
+import pdfplumber
 
 from pdf.pdf_reader import PdfReader
 from pdf.mos_table_parser import MosTableParser
@@ -16,7 +18,7 @@ from pdf.mos_header_parser import MosHeaderParser
 from validation import ValidationEngine
 from generators.po_line_generator import PoLineGenerator
 from generators.release_generator import ReleaseGenerator
-from database.customer_repository import CustomerRepository
+from generators.order_price_generator import OrderPriceGenerator
 from logging_.structured_logger import StructuredLogger
 
 logging.basicConfig(
@@ -39,10 +41,18 @@ def main() -> None:
         # ── Lectura del PDF ───────────────────────────────────────────────────
         reader     = PdfReader()
         pdf_result = reader.read(str(pdf_path))
-        raw_text   = pdf_result.text or ""
-        raw_tables = pdf_result.tables or []
 
-        sl.pdf_read(pages=pdf_result.pages, tables=len(raw_tables))
+        raw_text = "\n\n".join(
+            page.text for page in pdf_result.pages if page.text
+        )
+
+        raw_tables: list = []
+        with pdfplumber.open(str(pdf_path)) as pdf:
+            for page in pdf.pages:
+                for tbl in page.extract_tables() or []:
+                    raw_tables.append(tbl)
+
+        sl.pdf_read(pages=len(pdf_result.pages), tables=len(raw_tables))
 
         # ── Parse de tabla calendario ─────────────────────────────────────────
         table_parser = MosTableParser()
@@ -71,9 +81,9 @@ def main() -> None:
         print("=" * 60)
 
         for r in report.results:
-            marker  = "❌" if r.severity.value == "ERROR" else (
-                      "⚠️ " if r.severity.value == "WARNING" else "ℹ️ ")
-            detail  = ""
+            marker = "❌" if r.severity.value == "ERROR" else (
+                     "⚠️ " if r.severity.value == "WARNING" else "ℹ️ ")
+            detail = ""
             if r.part_number:
                 detail += f"  Part: {r.part_number}"
             if r.date:
@@ -97,35 +107,27 @@ def main() -> None:
             )
             return
 
-        # ── Resolver Ship To ──────────────────────────────────────────────────
-        ship_to = ""
-        try:
-            repo   = CustomerRepository()
-            record = repo.get_by_customer_code(mos_header.customer)
-            ship_to = record.ubication if record else ""
-        except Exception as exc:
-            logger.warning("No se pudo resolver Ship To: %s", exc)
-
         # ── Generadores XML ───────────────────────────────────────────────────
-        po_number  = mos_header.po_number or "UNKNOWN"
-        out_dir    = Path("output") / po_number
+        po_number = mos_header.po_number or "UNKNOWN"
+        out_dir   = Path("output") / po_number
         out_dir.mkdir(parents=True, exist_ok=True)
 
         generated: list[str] = []
 
-        po_gen   = PoLineGenerator()
-        po_path  = po_gen.generate(mos_header, mos_records, out_dir=str(out_dir))
+        po_gen  = PoLineGenerator()
+        po_path = po_gen.generate(mos_header, mos_records, out_dir=str(out_dir))
         generated.append(str(po_path))
-        logger.info("PO Line XML → %s", po_path)
+        logger.info("PO Line XML    → %s", po_path)
 
         rel_gen  = ReleaseGenerator()
-        rel_path = rel_gen.generate(
-            mos_header, mos_records,
-            ship_to=ship_to,
-            out_dir=str(out_dir),
-        )
+        rel_path = rel_gen.generate(mos_header, mos_records, out_dir=str(out_dir))
         generated.append(str(rel_path))
-        logger.info("Release XML → %s", rel_path)
+        logger.info("Release XML    → %s", rel_path)
+
+        price_gen  = OrderPriceGenerator()
+        price_path = price_gen.generate(mos_header, mos_records, out_dir=str(out_dir))
+        generated.append(str(price_path))
+        logger.info("Order Price XML → %s", price_path)
 
         # ── Auditoría final ───────────────────────────────────────────────────
         sl.pipeline_finished(
