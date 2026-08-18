@@ -1,20 +1,14 @@
 """
 main.py — Orquestador principal de plex-ai (CLI).
 
-Flujo (Etapa 11):
-  PDF → MOS Table Parser + MOS Header Parser
-      → ValidationEngine
-      → PoLineGenerator + ReleaseGenerator + OrderPriceGenerator
-      → Auditoría MySQL vía StructuredLogger
+Etapa 12: detección automática de cliente.
+Acepta cualquier archivo soportado (PDF Topre, PDF Y-tec, Excel S-Riko).
 """
 import logging
+import sys
 from pathlib import Path
 
-import pdfplumber
-
-from pdf.pdf_reader import PdfReader
-from pdf.mos_table_parser import MosTableParser
-from pdf.mos_header_parser import MosHeaderParser
+from ingestion.document_detector import DocumentDetector
 from validation import ValidationEngine
 from generators.po_line_generator import PoLineGenerator
 from generators.release_generator import ReleaseGenerator
@@ -28,47 +22,36 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main() -> None:
-    pdf_path = Path("documents/PO_Topre.pdf")
-    if not pdf_path.exists():
-        logger.error("PDF no encontrado: %s", pdf_path)
+def main(file_path: str | None = None) -> None:
+    # Acepta ruta como argumento o usa el PDF de Topre por defecto
+    if file_path is None:
+        file_path = sys.argv[1] if len(sys.argv) > 1 else "documents/PO_Topre.pdf"
+
+    path = Path(file_path)
+    if not path.exists():
+        logger.error("Archivo no encontrado: %s", path)
         return
 
-    sl = StructuredLogger(pdf_filename=pdf_path.name)
+    sl = StructuredLogger(pdf_filename=path.name)
     sl.pipeline_started()
 
     try:
-        # ── Lectura del PDF ───────────────────────────────────────────────────
-        reader     = PdfReader()
-        pdf_result = reader.read(str(pdf_path))
-
-        raw_text = "\n\n".join(
-            page.text for page in pdf_result.pages if page.text
+        # ── Detección y parseo ────────────────────────────────────────────────
+        file_bytes = path.read_bytes()
+        detector   = DocumentDetector()
+        mos_header, mos_records = detector.detect_and_parse(
+            file_bytes=file_bytes,
+            filename=path.name,
         )
 
-        raw_tables: list = []
-        with pdfplumber.open(str(pdf_path)) as pdf:
-            for page in pdf.pages:
-                for tbl in page.extract_tables() or []:
-                    raw_tables.append(tbl)
-
-        sl.pdf_read(pages=len(pdf_result.pages), tables=len(raw_tables))
-
-        # ── Parse de tabla calendario ─────────────────────────────────────────
-        table_parser = MosTableParser()
-        mos_records  = table_parser.parse(raw_tables)
         sl.records_extracted(len(mos_records))
-
-        # ── Parse de header ───────────────────────────────────────────────────
-        header_parser = MosHeaderParser()
-        mos_header    = header_parser.parse(raw_text)
         logger.info(
             "Header → Customer=%r  PO No=%r",
             mos_header.customer,
             mos_header.po_number,
         )
 
-        # ── Validaciones ──────────────────────────────────────────────────────
+        # ── Validación ────────────────────────────────────────────────────────
         engine = ValidationEngine()
         report = engine.run(mos_header, mos_records)
         sl.validation_done(
@@ -114,22 +97,25 @@ def main() -> None:
 
         generated: list[str] = []
 
-        po_gen  = PoLineGenerator()
-        po_path = po_gen.generate(mos_header, mos_records, out_dir=str(out_dir))
+        po_path = PoLineGenerator().generate(
+            mos_header, mos_records, out_dir=str(out_dir)
+        )
         generated.append(str(po_path))
-        logger.info("PO Line XML    → %s", po_path)
+        logger.info("PO Line XML     → %s", po_path)
 
-        rel_gen  = ReleaseGenerator()
-        rel_path = rel_gen.generate(mos_header, mos_records, out_dir=str(out_dir))
+        rel_path = ReleaseGenerator().generate(
+            mos_header, mos_records, out_dir=str(out_dir)
+        )
         generated.append(str(rel_path))
-        logger.info("Release XML    → %s", rel_path)
+        logger.info("Release XML     → %s", rel_path)
 
-        price_gen  = OrderPriceGenerator()
-        price_path = price_gen.generate(mos_header, mos_records, out_dir=str(out_dir))
+        price_path = OrderPriceGenerator().generate(
+            mos_header, mos_records, out_dir=str(out_dir)
+        )
         generated.append(str(price_path))
         logger.info("Order Price XML → %s", price_path)
 
-        # ── Auditoría final ───────────────────────────────────────────────────
+        # ── Auditoría ─────────────────────────────────────────────────────────
         sl.pipeline_finished(
             customer=mos_header.customer,
             po_number=mos_header.po_number,

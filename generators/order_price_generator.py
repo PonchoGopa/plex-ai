@@ -181,7 +181,7 @@ class OrderPriceGenerator:
             header.customer  or "",  # Customer
             header.po_number or "",  # Customer PO No
             part_no,                 # Customer Part No
-            part_no,                 # Customer Part Revision
+            "",                 # Customer Part Revision
             price_str,               # Price
             eff_date_str,            # Effective Date
             "",                      # Expiration Date
