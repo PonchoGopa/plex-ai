@@ -30,6 +30,8 @@ class MosRecord:
     date:         str           # DD/MM/YYYY
     quantity_box: int | None
     quantity_qty: int | None
+    po_number:    str | None = None   # None = tomar del MosHeader (Topre/S-Riko)
+                                      # valor = PO propio del registro (Y-tec)
 
     # Aliases para que el motor de validaciones use nombres consistentes
     @property
@@ -63,8 +65,6 @@ class MosTableParser:
         """
         if not tables:
             return []
-        # PdfReader devuelve PdfContent; si ya viene la lista de tablas
-        # la envolvemos en un objeto compatible.
         pseudo_content = _PseudoContent(tables)
         return parse_mos_table(pseudo_content)
 
@@ -234,13 +234,14 @@ def _extract_records(
 
             if box_val is not None or qty_val is not None:
                 records.append(MosRecord(
-                    part_number=part_number,
-                    part_name=part_name,
-                    model=model,
-                    snp=snp,
-                    date=date_str,
-                    quantity_box=box_val,
-                    quantity_qty=qty_val,
+                    part_number  = part_number,
+                    part_name    = part_name,
+                    model        = model,
+                    snp          = snp,
+                    date         = date_str,
+                    quantity_box = box_val,
+                    quantity_qty = qty_val,
+                    # po_number omitido → queda None (comportamiento Topre)
                 ))
 
         i += 2
