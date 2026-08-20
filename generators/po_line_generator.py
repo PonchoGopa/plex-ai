@@ -4,7 +4,10 @@ Generador del archivo Po_Line_Upload para Plex ERP.
 Produce un XML SpreadsheetML con una fila por part number único.
 Campos obligatorios confirmados: Customer Code, PO No, PO Status,
 PO Type, PO Date, Terms, Freight Terms, Customer Part No, Part No.
-Todos los demás campos van vacíos.
+
+Etapa 12.1: Customer Part No resuelto via PartResolver
+            (kimexproduction.customer_part_comparison).
+            Part No mantiene el Kimex_Part_No original.
 """
 from __future__ import annotations
 
@@ -13,6 +16,7 @@ from datetime import date
 from pathlib import Path
 
 from pdf.mos_table_parser import MosHeader, MosRecord
+from generators.part_resolver import PartResolver
 
 
 _NS = {
@@ -34,7 +38,6 @@ _HEADERS = [
     "Negotiated Place",
 ]
 
-# Índice 0-based → valor fijo de negocio
 _FIXED_VALUES = {
     2: "Open",    # PO Status
     3: "Blanket", # PO Type
@@ -44,9 +47,9 @@ _FIXED_VALUES = {
 
 
 class PoLineGenerator:
-    """
-    Genera Po_Line_Upload_<YYYYMMDD>.xml en el directorio de salida indicado.
-    """
+
+    def __init__(self) -> None:
+        self._resolver = PartResolver()
 
     def generate(
         self,
@@ -57,25 +60,33 @@ class PoLineGenerator:
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        # Una fila por part number único (preservar orden)
+        seen: dict[str, MosRecord] = {}
+        for rec in records:
+            if rec.part_number and rec.part_number not in seen:
+                seen[rec.part_number] = rec
+        unique_parts = list(seen.values())
+
+        # Resolver Customer Part No en bulk (una sola query)
+        part_map = self._resolver.resolve(
+            [r.part_number for r in unique_parts]
+        )
+
         today     = date.today()
         po_date   = today.strftime("%m/%d/%Y")
         file_name = f"PO_Line_Upload_{today.strftime('%Y%m%d')}.xml"
         out_path  = out_dir / file_name
 
-        seen: dict[str, MosRecord] = {}
-        for rec in records:
-            if rec.part_number not in seen:
-                seen[rec.part_number] = rec
-
-        workbook = self._build_workbook(header, po_date, list(seen.values()))
+        workbook = self._build_workbook(header, po_date, unique_parts, part_map)
         self._write(workbook, out_path)
         return out_path
 
     def _build_workbook(
         self,
-        header:  MosHeader,
-        po_date: str,
-        parts:   list[MosRecord],
+        header:   MosHeader,
+        po_date:  str,
+        parts:    list[MosRecord],
+        part_map: dict[str, str],
     ) -> ET.Element:
         ET.register_namespace("",     _NS["ss"])
         ET.register_namespace("o",    _NS["o"])
@@ -92,7 +103,6 @@ class PoLineGenerator:
                 "xmlns:html": _NS["html"],
             },
         )
-
         wb.append(self._styles())
 
         ws    = ET.SubElement(wb, "Worksheet", {"ss:Name": "Worksheet1"})
@@ -108,7 +118,8 @@ class PoLineGenerator:
         table.append(self._header_row())
 
         for rec in parts:
-            table.append(self._data_row(header, po_date, rec))
+            customer_part_no = part_map.get(rec.part_number, rec.part_number)
+            table.append(self._data_row(header, po_date, rec, customer_part_no))
 
         return wb
 
@@ -121,18 +132,20 @@ class PoLineGenerator:
         return row
 
     def _data_row(
-        self, header: MosHeader, po_date: str, rec: MosRecord
+        self,
+        header:           MosHeader,
+        po_date:          str,
+        rec:              MosRecord,
+        customer_part_no: str,
     ) -> ET.Element:
         values = [""] * len(_HEADERS)
 
-        # Dinámicos — vienen del PDF
-        values[0]  = header.customer  or ""  # Customer Code
-        values[1]  = header.po_number or ""  # PO No
-        values[4]  = po_date                 # PO Date
-        values[10] = rec.part_number  or ""  # Customer Part No
-        values[18] = rec.part_number  or ""  # Part No
+        values[0]  = header.customer     or ""   # Customer Code
+        values[1]  = header.po_number    or ""   # PO No
+        values[4]  = po_date                     # PO Date
+        values[10] = customer_part_no            # Customer Part No ← BD
+        values[18] = rec.part_number     or ""   # Part No ← Kimex original
 
-        # Fijos de negocio
         for col_idx, val in _FIXED_VALUES.items():
             values[col_idx] = val
 
@@ -164,7 +177,6 @@ class PoLineGenerator:
     @staticmethod
     def _write(workbook: ET.Element, path: Path) -> None:
         ET.indent(ET.ElementTree(workbook), space="  ")
-
         header_lines = (
             '<?xml version="1.0" encoding="utf-8"?>\n'
             '<?mso-application progid="Excel.Sheet"?>\n'

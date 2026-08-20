@@ -3,12 +3,9 @@ Generador del archivo Release_Upload para Plex ERP.
 
 Produce un XML SpreadsheetML con una fila por part number + fecha.
 
-Campos obligatorios: Customer Code, PO No, Customer Part No,
-Part No, Quantity, Due Date.
-
-Ship From: fijo "KeiMx".
-Ship To:   consultado en kimexproduction.customers por Customer_Code.
-           Si no se encuentra, se deja vacío y se emite WARNING en log.
+Etapa 12.1: Customer Part No resuelto via PartResolver
+            (kimexproduction.customer_part_comparison).
+            Part No mantiene el Kimex_Part_No original.
 """
 from __future__ import annotations
 
@@ -19,6 +16,7 @@ from pathlib import Path
 
 from pdf.mos_table_parser import MosHeader, MosRecord
 from database.customer_repository import CustomerRepository
+from generators.part_resolver import PartResolver
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +41,14 @@ _HEADERS = [
     "Production Start Date", "Schedule Type",
 ]
 
-_SHIP_FROM = "KeiMx"   # valor fijo de negocio
+_SHIP_FROM = "KeiMx"
 
 
 class ReleaseGenerator:
-    """
-    Genera Release_Upload_<YYYYMMDD>.xml en el directorio de salida indicado.
-    """
 
     def __init__(self) -> None:
         self._customer_repo = CustomerRepository()
+        self._resolver      = PartResolver()
 
     def generate(
         self,
@@ -67,10 +63,16 @@ class ReleaseGenerator:
         file_name = f"Release_Upload_{today.strftime('%Y%m%d')}.xml"
         out_path  = out_dir / file_name
 
-        # Resolver Ship To UNA sola vez por documento (mismo cliente en todas las filas)
+        # Ship To — una sola consulta por documento
         ship_to = self._resolve_ship_to(header.customer)
 
-        workbook = self._build_workbook(header, records, ship_to)
+        # Customer Part No — una sola query bulk para todas las partes
+        unique_part_nos = list(dict.fromkeys(
+            r.part_number for r in records if r.part_number
+        ))
+        part_map = self._resolver.resolve(unique_part_nos)
+
+        workbook = self._build_workbook(header, records, ship_to, part_map)
         self._write(workbook, out_path)
         return out_path
 
@@ -94,9 +96,10 @@ class ReleaseGenerator:
 
     def _build_workbook(
         self,
-        header:  MosHeader,
-        records: list[MosRecord],
-        ship_to: str,
+        header:   MosHeader,
+        records:  list[MosRecord],
+        ship_to:  str,
+        part_map: dict[str, str],
     ) -> ET.Element:
         ET.register_namespace("",     _NS["ss"])
         ET.register_namespace("o",    _NS["o"])
@@ -113,7 +116,6 @@ class ReleaseGenerator:
                 "xmlns:html": _NS["html"],
             },
         )
-
         wb.append(self._styles())
 
         ws    = ET.SubElement(wb, "Worksheet", {"ss:Name": "Worksheet1"})
@@ -129,7 +131,10 @@ class ReleaseGenerator:
         table.append(self._header_row())
 
         for rec in records:
-            table.append(self._data_row(header, rec, ship_to))
+            customer_part_no = part_map.get(rec.part_number, rec.part_number)
+            # Y-tec: PO No por registro; Topre/S-Riko: PO No del header
+            po_no = rec.po_number if rec.po_number else (header.po_number or "")
+            table.append(self._data_row(header, rec, ship_to, customer_part_no, po_no))
 
         return wb
 
@@ -142,18 +147,23 @@ class ReleaseGenerator:
         return row
 
     def _data_row(
-        self, header: MosHeader, rec: MosRecord, ship_to: str
+        self,
+        header:           MosHeader,
+        rec:              MosRecord,
+        ship_to:          str,
+        customer_part_no: str,
+        po_no:            str,
     ) -> ET.Element:
         values = [""] * len(_HEADERS)
 
-        values[0]  = header.customer  or ""          # Customer Code
-        values[1]  = ship_to                         # Ship To ← BD
-        values[2]  = header.po_number or ""          # PO No
-        values[3]  = rec.part_number  or ""          # Customer Part No
-        values[5]  = rec.part_number  or ""          # Part No
-        values[8]  = str(rec.quantity_qty or "")     # Quantity
-        values[9]  = self._convert_date(rec.date)    # Due Date MM/DD/YYYY
-        values[10] = _SHIP_FROM                      # Ship From ← fijo
+        values[0]  = header.customer              or ""  # Customer Code
+        values[1]  = ship_to                             # Ship To ← BD
+        values[2]  = po_no                               # PO No (header o rec)
+        values[3]  = customer_part_no                    # Customer Part No ← BD
+        values[5]  = rec.part_number              or ""  # Part No ← Kimex original
+        values[8]  = str(rec.quantity_qty or "")         # Quantity
+        values[9]  = self._convert_date(rec.date)        # Due Date MM/DD/YYYY
+        values[10] = _SHIP_FROM                          # Ship From ← fijo
 
         row = ET.Element("Row")
         for val in values:
@@ -164,7 +174,6 @@ class ReleaseGenerator:
 
     @staticmethod
     def _convert_date(date_str: str | None) -> str:
-        """Convierte DD/MM/YYYY → MM/DD/YYYY (formato Plex)."""
         if not date_str:
             return ""
         try:

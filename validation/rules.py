@@ -65,11 +65,10 @@ class BoxSnpQtyRule(ValidationRule):
         for rec in records:
             box = rec.quantity_box
             qty = rec.quantity_qty
-            # snp viene como string en el dataclass; convertir con seguridad
             try:
                 snp = int(str(rec.snp).replace(",", "").strip())
             except (ValueError, AttributeError):
-                continue  # SNP no numérico → otra regla lo captura
+                continue
 
             if not box or not snp or not qty:
                 continue
@@ -164,6 +163,13 @@ class DuplicateRecordRule(ValidationRule):
 # ── Regla 5: Header obligatorio ───────────────────────────────────────────────
 
 class RequiredHeaderFieldsRule(ValidationRule):
+    """
+    Valida que customer y po_number estén presentes.
+
+    Excepción para po_number: si el header no tiene PO pero TODOS los
+    registros tienen su propio po_number (caso Y-tec), la regla pasa.
+    Esto permite documentos donde el PO va por entrega, no por documento.
+    """
 
     REQUIRED = ("customer", "po_number")
     LABELS   = {"customer": "Customer", "po_number": "PO No"}
@@ -177,6 +183,12 @@ class RequiredHeaderFieldsRule(ValidationRule):
         for attr in self.REQUIRED:
             value = getattr(header, attr, None)
             if not value or not str(value).strip():
+
+                # Excepción: po_number vacío en header es válido si cada
+                # registro trae su propio po_number (documentos tipo Y-tec)
+                if attr == "po_number" and self._all_records_have_po(records):
+                    continue
+
                 results.append(ValidationResult(
                     severity = Severity.ERROR,
                     rule     = self.name,
@@ -184,3 +196,13 @@ class RequiredHeaderFieldsRule(ValidationRule):
                     field    = attr,
                 ))
         return results
+
+    @staticmethod
+    def _all_records_have_po(records: list[MosRecord]) -> bool:
+        """True si hay al menos un registro y todos tienen po_number no vacío."""
+        if not records:
+            return False
+        return all(
+            bool(rec.po_number and str(rec.po_number).strip())
+            for rec in records
+        )
