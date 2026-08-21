@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Default">
+   <Alignment ss:Vertical="Bottom"/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1"/>
+  </Style>
+  <Style ss:ID="String">
+   <NumberFormat ss:Format="@"/>
+  </Style>
+  <Style ss:ID="DateFormat">
+   <NumberFormat ss:Format="General Date"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Worksheet1">
+  <Table>
+   <Column ss:AutoFitWidth="1" ss:Index="1" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="2" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="3" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="4" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="5" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="6" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="7" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="8" ss:StyleID="String"/>
+   <Column ss:AutoFitWidth="1" ss:Index="9" ss:StyleID="String"/>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Customer Part No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Quantity]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Due Date]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[PO No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Ship To]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Dock Code]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Release No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Part No]]></Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String"><![CDATA[Part Revision]]></Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>

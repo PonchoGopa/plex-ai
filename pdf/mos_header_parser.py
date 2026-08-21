@@ -8,7 +8,7 @@ de tabla como el de header compartan el mismo dataclass sin duplicarlo.
 from __future__ import annotations
 import re
 from pdf.pdf_reader import PdfContent
-from pdf.mos_table_parser import MosHeader   # fuente única de verdad
+from pdf.mos_table_parser import MosHeader
 
 
 # ── Patrones ──────────────────────────────────────────────────────────────────
@@ -20,35 +20,17 @@ _RE_PO = re.compile(
 )
 
 # Nombre del cliente antes de "issues Material Order Sheet"
+# Captura solo la última línea no vacía antes de "issues"
 _RE_CUSTOMER_ISSUES = re.compile(
     r"(?:(?:\(cid:\d+\)[A-Z]?)\s*)*([A-Za-z0-9][A-Za-z0-9&\-\s,\.]*?)\s+issues\s+Material\s+Order\s+Sheet",
     re.IGNORECASE,
 )
 
-# Fecha de emisión tipo "Rev.02 19/03/2024"
-_RE_ISSUE_DATE = re.compile(
-    r"Rev\.\d+\s+(\d{2}/\d{2}/\d{4})",
-    re.IGNORECASE,
-)
-
-
-# ── Clase principal (nueva) ───────────────────────────────────────────────────
 
 class MosHeaderParser:
-    """
-    Wrapper OO sobre parse_mos_header().
-    Interfaz consistente con MosTableParser.
-    """
-
     def parse(self, text: str) -> MosHeader:
-        """
-        Recibe el texto plano del PDF (ya extraído por PdfReader)
-        y devuelve un MosHeader con customer y po_number.
-        """
         return parse_mos_header_from_text(text)
 
-
-# ── Función original adaptada ─────────────────────────────────────────────────
 
 def parse_mos_header(pdf_content: PdfContent) -> MosHeader:
     """Conservada para compatibilidad con código existente."""
@@ -58,21 +40,28 @@ def parse_mos_header(pdf_content: PdfContent) -> MosHeader:
 
 
 def parse_mos_header_from_text(raw_text: str) -> MosHeader:
-    """Extrae header a partir de texto plano (usado por MosHeaderParser.parse)."""
     clean_text = _remove_cid_artifacts(raw_text)
     return _extract(clean_text)
 
 
-# ── Lógica interna ────────────────────────────────────────────────────────────
-
 def _extract(clean_text: str) -> MosHeader:
     header = MosHeader()
 
+    # PO Number
     m = _RE_PO.search(clean_text)
-    header.po_number = m.group(1).strip() if m else None
+    header.po_number = m.group(1).strip() if m else ""
 
+    # Customer: el regex puede capturar varias líneas si hay texto
+    # de empresa antes del nombre del cliente (ej: "KI USA MEX...\nTopre").
+    # Tomamos solo la última línea no vacía del match.
     m = _RE_CUSTOMER_ISSUES.search(clean_text)
-    header.customer = m.group(1).strip() if m else None
+    if m:
+        raw_customer = m.group(1).strip()
+        # Tomar la última línea no vacía — descarta encabezados de empresa
+        lines = [l.strip() for l in raw_customer.splitlines() if l.strip()]
+        header.customer = lines[-1] if lines else raw_customer
+    else:
+        header.customer = ""
 
     return header
 
