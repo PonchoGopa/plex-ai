@@ -1,0 +1,428 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">
+  <Styles>
+    <Style ss:ID="Default">
+      <Alignment ss:Vertical="Bottom" />
+    </Style>
+    <Style ss:ID="Header">
+      <Font ss:Bold="1" />
+    </Style>
+    <Style ss:ID="String">
+      <NumberFormat ss:Format="@" />
+    </Style>
+    <Style ss:ID="DateFormat">
+      <NumberFormat ss:Format="General Date" />
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="Worksheet1">
+    <Table>
+      <Column ss:AutoFitWidth="1" ss:Index="1" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="2" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="3" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="4" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="5" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="6" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="7" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="8" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="9" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="10" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="11" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="12" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="13" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="14" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="15" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="16" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="17" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="18" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="19" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="20" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="21" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="22" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="23" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="24" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="25" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="26" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="27" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="28" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="29" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="30" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="31" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="32" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="33" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="34" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="35" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="36" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="37" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="38" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="39" ss:StyleID="String" />
+      <Column ss:AutoFitWidth="1" ss:Index="40" ss:StyleID="String" />
+      <Row>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Customer Code</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Ship To</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">PO No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Customer Part No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Customer Part Revision</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Part No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Part Revision</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Release No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Quantity</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Due Date</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Ship From</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Kanban No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Dock Code</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line Code</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line 11</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line 12</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line 13</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line 14</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line 15</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line 16</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Line 17</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Material Handling Code</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Reference No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Document</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI R Code</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Intermediate Consignee</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Load Sequence No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Lot No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Batch</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Order No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">EDI Dealer No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Release Type</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Vehicle ID</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Rotation</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Usepoint</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Auto Create PO</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Supplier Code</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Drop Ship PO No</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Production Start Date</Data>
+        </Cell>
+        <Cell ss:StyleID="Header">
+          <Data ss:Type="String">Schedule Type</Data>
+        </Cell>
+      </Row>
+      <Row>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">YKM</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">YKM</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">005549680001</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">VA4054314</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">VA40-54-314</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">2160</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">08/13/2026</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">KeiMx</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+      </Row>
+      <Row>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">YKM</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">YKM</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">005555090001</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">VA4054314</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">VA40-54-314</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">1440</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">08/20/2026</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String">KeiMx</Data>
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+        <Cell ss:StyleID="String">
+          <Data ss:Type="String" />
+        </Cell>
+      </Row>
+    </Table>
+  </Worksheet>
+</Workbook>

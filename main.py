@@ -1,19 +1,19 @@
 """
 main.py — Orquestador principal de plex-ai (CLI).
-
-Etapa 12: detección automática de cliente.
-Acepta cualquier archivo soportado (PDF Topre, PDF Y-tec, Excel S-Riko).
+Etapa 12.1: Customer_Code y ubication resueltos desde BD.
 """
 import logging
 import sys
 from pathlib import Path
 
-from ingestion.document_detector import DocumentDetector
-from validation import ValidationEngine
+from database.customer_repository import CustomerRepository
+from generators.order_price_generator import OrderPriceGenerator
 from generators.po_line_generator import PoLineGenerator
 from generators.release_generator import ReleaseGenerator
-from generators.order_price_generator import OrderPriceGenerator
+from ingestion.document_detector import DocumentDetector
 from logging_.structured_logger import StructuredLogger
+from pdf.mos_table_parser import MosHeader
+from validation import ValidationEngine
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,9 +21,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+_customer_repo = CustomerRepository()
+
+
+def _resolve_customer(header: MosHeader) -> MosHeader:
+    """Sobreescribe customer con Customer_Code y agrega ubication desde BD."""
+    rec = _customer_repo.get_by_name(header.customer)
+    if rec:
+        return MosHeader(
+            customer  = rec.customer_code,
+            po_number = header.po_number,
+            ubication = rec.ubication,
+        )
+    logger.warning(
+        "Cliente %r no encontrado en BD — se usa nombre del PDF.",
+        header.customer,
+    )
+    return MosHeader(
+        customer  = header.customer,
+        po_number = header.po_number,
+        ubication = "",
+    )
+
 
 def main(file_path: str | None = None) -> None:
-    # Acepta ruta como argumento o usa el PDF de Topre por defecto
     if file_path is None:
         file_path = sys.argv[1] if len(sys.argv) > 1 else "documents/PO_Topre.pdf"
 
@@ -43,12 +64,15 @@ def main(file_path: str | None = None) -> None:
             file_bytes=file_bytes,
             filename=path.name,
         )
-
         sl.records_extracted(len(mos_records))
+
+        # ── Resolver Customer_Code y ubication desde BD ───────────────────────
+        mos_header = _resolve_customer(mos_header)
         logger.info(
-            "Header → Customer=%r  PO No=%r",
+            "Header → Customer=%r  PO No=%r  Ship To=%r",
             mos_header.customer,
             mos_header.po_number,
+            mos_header.ubication,
         )
 
         # ── Validación ────────────────────────────────────────────────────────

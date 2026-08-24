@@ -47,6 +47,7 @@ class MosRecord:
 class MosHeader:
     customer:   str = ""
     po_number:  str = ""
+    ubication:  str = ""
 
 
 # ── Clase principal (nueva) ───────────────────────────────────────────────────

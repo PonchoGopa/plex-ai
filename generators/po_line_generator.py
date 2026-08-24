@@ -43,6 +43,7 @@ _FIXED_VALUES = {
     3: "Blanket", # PO Type
     5: "Net 30",  # Terms
     7: "C.O.D",   # Freight Terms
+    9: "KeiKx",   # Approved Ship From
 }
 
 
@@ -143,6 +144,7 @@ class PoLineGenerator:
         values[0]  = header.customer     or ""   # Customer Code
         values[1]  = header.po_number    or ""   # PO No
         values[4]  = po_date                     # PO Date
+        values[8]  = header.ubication    or ""   # Approved Ship To ← BD
         values[10] = customer_part_no            # Customer Part No ← BD
         values[18] = rec.part_number     or ""   # Part No ← Kimex original
 
