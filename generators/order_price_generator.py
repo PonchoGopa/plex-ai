@@ -20,6 +20,7 @@ from typing import Optional
 
 from database.customer_part_price_repository import CustomerPartPriceRepository
 from pdf.mos_table_parser import MosHeader, MosRecord
+from generators.part_resolver import PartResolver
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class OrderPriceGenerator:
 
     def __init__(self) -> None:
         self._price_repo = CustomerPartPriceRepository()
+        self._resolver   = PartResolver()
 
     def generate(
         self,
@@ -78,9 +80,10 @@ class OrderPriceGenerator:
 
         # Consulta bulk (una sola query)
         prices = self._price_repo.get_bulk(unique_parts)
+        part_map = self._resolver.resolve(unique_parts)
 
         # Construir y escribir XML
-        workbook = self._build_xml(header, unique_parts, prices)
+        workbook = self._build_xml(header, unique_parts, prices, part_map)
 
         filename = f"Order_Price_Upload_{datetime.now().strftime('%Y%m%d')}.xml"
         out_path = out_dir / filename
@@ -115,6 +118,7 @@ class OrderPriceGenerator:
         header:       MosHeader,
         unique_parts: list[str],
         prices:       dict,
+        part_map:     dict[str, str],
     ) -> ET.Element:
         for prefix, uri in _NS_MAP.items():
             ET.register_namespace(prefix, uri)
@@ -160,16 +164,18 @@ class OrderPriceGenerator:
 
         # Filas de datos
         for part_no in unique_parts:
-            self._add_data_row(table, header, part_no, prices.get(part_no))
+            customer_part_no = part_map.get(part_no, part_no)
+            self._add_data_row(table, header, part_no, prices.get(part_no), customer_part_no)
 
         return workbook
 
     def _add_data_row(
         self,
-        table:     ET.Element,
-        header:    MosHeader,
-        part_no:   str,
+        table:            ET.Element,
+        header:           MosHeader,
+        part_no:          str,
         price_rec,
+        customer_part_no: str,
     ) -> None:
         price_str    = str(price_rec.price)          if price_rec else ""
         eff_date_str = (
@@ -180,14 +186,14 @@ class OrderPriceGenerator:
         values = [
             header.customer  or "",  # Customer
             header.po_number or "",  # Customer PO No
-            part_no,                 # Customer Part No
-            "",                 # Customer Part Revision
+            customer_part_no,        # Customer Part No ← resolved from DB
+            "",                      # Customer Part Revision
             price_str,               # Price
             eff_date_str,            # Effective Date
             "",                      # Expiration Date
             "",                      # Account No
             "",                      # Amount
-            part_no,                 # Part No
+            part_no,                 # Part No ← Kimex original
             "",                      # Revision
             "",                      # Breakpoint Quantity
             "",                      # Note

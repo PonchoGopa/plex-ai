@@ -43,7 +43,7 @@ _FIXED_VALUES = {
     3: "Blanket", # PO Type
     5: "Net 30",  # Terms
     7: "C.O.D",   # Freight Terms
-    9: "KeiKx",   # Approved Ship From
+    9: "KeiMx",   # Approved Ship From
 }
 
 
