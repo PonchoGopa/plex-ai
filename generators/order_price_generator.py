@@ -197,11 +197,11 @@ class OrderPriceGenerator:
             "",                      # Revision
             "",                      # Breakpoint Quantity
             "",                      # Note
-            "1",                     # Master Price
+            "",                      # Master Price
             "1",                     # Active
             "Ea",                    # Unit
             "1",                     # Primary Price
-            "USD",                   # Currency
+            "",                      # Currency
         ]
 
         row = ET.SubElement(table, "Row")
