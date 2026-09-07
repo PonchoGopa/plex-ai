@@ -1,22 +1,27 @@
 import os
+import urllib.parse
 from dataclasses import dataclass, field
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Cargar .env de forma absoluta para garantizar lectura bajo servicios de Windows (NSSM)
+_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=_ENV_PATH)
 
 
 @dataclass
 class DatabaseConfig:
     host:     str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
     port:     int = field(default_factory=lambda: int(os.getenv("DB_PORT", "3306")))
-    name:     str = field(default_factory=lambda: os.getenv("DB_NAME", "plex_ai"))
+    name:     str = field(default_factory=lambda: os.getenv("DB_NAME", "plex_template"))
     user:     str = field(default_factory=lambda: os.getenv("DB_USER", "root"))
     password: str = field(default_factory=lambda: os.getenv("DB_PASSWORD", ""))
 
     @property
     def url(self) -> str:
+        safe_password = urllib.parse.quote_plus(self.password)
         return (
-            f"mysql+pymysql://{self.user}:{self.password}"
+            f"mysql+pymysql://{self.user}:{safe_password}"
             f"@{self.host}:{self.port}/{self.name}"
         )
 
