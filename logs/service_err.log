@@ -1,0 +1,176 @@
+2026-09-04 15:12:50.066 Uvicorn server started on 0.0.0.0:8501
+2026-09-04 15:15:41.728 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-09-04 15:17:05.916 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-09-04 15:27:52.593 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+AuditRepository.start_run falló (pipeline continúa):
+Traceback (most recent call last):
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 144, in __init__
+    self._dbapi_connection = engine.raw_connection()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 3319, in raw_connection
+    return self.pool.connect()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 448, in connect
+    return _ConnectionFairy._checkout(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 1272, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 712, in checkout
+    rec = pool._do_get()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\impl.py", line 178, in _do_get
+    with util.safe_reraise():
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    return self._create_connection()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 389, in _create_connection
+    return _ConnectionRecord(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 674, in __init__
+    self.__connect()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 900, in __connect
+    with util.safe_reraise():
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 896, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\create.py", line 667, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 372, in __init__
+    self.connect()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 702, in connect
+    self._request_authentication()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 1000, in _request_authentication
+    auth_packet = self._read_packet()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 803, in _read_packet
+    packet.raise_for_error()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\err.py", line 154, in raise_mysql_exception
+    raise errorclass(errno, errval, sqlstate=sqlstate)
+pymysql.err.OperationalError: (1045, "Access denied for user 'root'@'localhost' (using password: NO)")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\logging_\structured_logger.py", line 59, in pipeline_started
+    self._run_id = self._repo.start_run(pdf_filename=self._pdf_filename)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\database\audit_repository.py", line 36, in start_run
+    session.flush()        # genera el id sin cerrar la transacción
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 4353, in flush
+    self._flush(objects)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 4488, in _flush
+    with util.safe_reraise():
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 4449, in _flush
+    flush_context.execute()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\unitofwork.py", line 465, in execute
+    rec.execute(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\unitofwork.py", line 641, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\persistence.py", line 61, in save_obj
+    for (
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\persistence.py", line 224, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\persistence.py", line 1760, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+  File "<string>", line 2, in connection
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 1041, in connection
+    return self._connection_for_bind(bind, execution_options)
+  File "<string>", line 2, in _connection_for_bind
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 1177, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+  File "<string>", line 2, in _connection_for_bind
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 1191, in _connection_for_bind
+    conn = bind.connect()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 3295, in connect
+    return self._connection_cls(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 146, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 2450, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 144, in __init__
+    self._dbapi_connection = engine.raw_connection()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 3319, in raw_connection
+    return self.pool.connect()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 448, in connect
+    return _ConnectionFairy._checkout(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 1272, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 712, in checkout
+    rec = pool._do_get()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\impl.py", line 178, in _do_get
+    with util.safe_reraise():
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\impl.py", line 176, in _do_get
+    return self._create_connection()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 389, in _create_connection
+    return _ConnectionRecord(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 674, in __init__
+    self.__connect()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 900, in __connect
+    with util.safe_reraise():
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\pool\base.py", line 896, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\create.py", line 667, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 372, in __init__
+    self.connect()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 702, in connect
+    self._request_authentication()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 1000, in _request_authentication
+    auth_packet = self._read_packet()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\connections.py", line 803, in _read_packet
+    packet.raise_for_error()
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "C:\Users\IT-D\Documents\GitHub\plex-ai\.venv\lib\site-packages\pymysql\err.py", line 154, in raise_mysql_exception
+    raise errorclass(errno, errval, sqlstate=sqlstate)
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'localhost' (using password: NO)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+Error consultando lista de clientes: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'localhost' (using password: NO)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Cliente 'Y-tec Keylex Mexico.S.A.de C.V' no encontrado en BD — se usa nombre del PDF como Customer Code.
+Pipeline falló con excepción: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'localhost' (using password: NO)")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-09-07 06:20:32.638 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+2026-09-07 06:31:15.244 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+Exception in callback _ProactorBasePipeTransport._call_connection_lost(None)
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost(None)>
+Traceback (most recent call last):
+  File "C:\Users\IT-D\AppData\Local\Programs\Python\Python310\lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\IT-D\AppData\Local\Programs\Python\Python310\lib\asyncio\proactor_events.py", line 162, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+ConnectionResetError: [WinError 10054] Se ha forzado la interrupción de una conexión existente por el host remoto
