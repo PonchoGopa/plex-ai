@@ -6,6 +6,11 @@ import logging
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 from database.customer_repository import CustomerRepository
 from generators.order_price_generator import OrderPriceGenerator
 from generators.po_line_generator import PoLineGenerator
