@@ -22,7 +22,7 @@ class DatabaseConfig:
         safe_password = urllib.parse.quote_plus(self.password)
         return (
             f"mysql+pymysql://{self.user}:{safe_password}"
-            f"@{self.host}:{self.port}/{self.name}"
+            f"@{self.host}:{self.port}/{self.name}?charset=utf8mb4"
         )
 
 
@@ -70,6 +70,23 @@ def get_kimex_db_config() -> DatabaseConfig:
         user     = os.getenv("KIMEX_DB_USER",     os.getenv("DB_USER",     "root")),
         password = os.getenv("KIMEX_DB_PASSWORD", os.getenv("DB_PASSWORD", "")),
         name     = os.getenv("KIMEX_DB_NAME",     "kimexproduction"),
+    )
+
+
+def get_plex_data_db_config() -> DatabaseConfig:
+    """
+    Base de datos de datos operativos/precios: plex_data.customer_part_price.
+
+    Usa las mismas credenciales que plex_template (mismo servidor),
+    solo cambia el nombre de la base de datos.
+    Sobrescribible con variables PLEX_DATA_DB_* en .env si fuera necesario.
+    """
+    return DatabaseConfig(
+        host     = os.getenv("PLEX_DATA_DB_HOST",     os.getenv("DB_HOST",     "localhost")),
+        port     = int(os.getenv("PLEX_DATA_DB_PORT",  os.getenv("DB_PORT",     "3306"))),
+        user     = os.getenv("PLEX_DATA_DB_USER",     os.getenv("DB_USER",     "root")),
+        password = os.getenv("PLEX_DATA_DB_PASSWORD", os.getenv("DB_PASSWORD", "")),
+        name     = os.getenv("PLEX_DATA_DB_NAME",     "plex_data"),
     )
 
 

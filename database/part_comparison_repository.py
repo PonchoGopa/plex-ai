@@ -17,6 +17,8 @@ from typing import Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from config.config import get_kimex_db_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,17 +29,8 @@ class PartComparisonRepository:
     """
 
     def __init__(self) -> None:
-        host     = os.getenv("DB_HOST", "localhost")
-        port     = os.getenv("DB_PORT", "3306")
-        user     = os.getenv("DB_USER", "root")
-        password = os.getenv("DB_PASSWORD", "")
-        db_name  = os.getenv("KIMEX_DB_NAME", "kimexproduction")
-
-        url = (
-            f"mysql+pymysql://{user}:{password}"
-            f"@{host}:{port}/{db_name}?charset=utf8mb4"
-        )
-        engine = create_engine(url, pool_pre_ping=True, echo=False)
+        config = get_kimex_db_config()
+        engine = create_engine(config.url, pool_pre_ping=True, echo=False)
         self._Session = sessionmaker(bind=engine)
 
     def get_bulk(self, kimex_part_nos: list[str]) -> dict[str, str]:
