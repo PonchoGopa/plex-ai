@@ -7,11 +7,12 @@ y devuelve (MosHeader, list[MosRecord]) usando el parser correcto.
 Clientes soportados:
   - Topre       → PDF con "Material Order Sheet"
   - Y-tec       → PDF con "DELIVERY INSTRUCTION" / "Y-tec"
+  - GEMO        → PDF con "Planning deliveries without pick up" / "GEMO"
   - S-Riko      → Excel .xlsx con "S-Riko" en contenido
 
 Detección por prioridad:
   1. Extensión del archivo (.xlsx → S-Riko)
-  2. Palabras clave en el texto del PDF
+  2. Palabras clave en el texto del PDF y nombre del archivo
 """
 from __future__ import annotations
 
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 # Palabras clave para identificar cliente en PDF
 _TOPRE_KEYWORDS = ["material order sheet", "topre"]
 _YTEC_KEYWORDS  = ["delivery instruction", "y-tec", "ytec", "ypu"]
+_GEMO_KEYWORDS  = ["planning deliveries without pick up", "planning deliveries", "gemo"]
 
 
 class DocumentDetector:
@@ -70,15 +72,17 @@ class DocumentDetector:
         # ── PDF → detectar por contenido ─────────────────────────────────────
         if ext == ".pdf":
             raw_text, raw_tables = self._extract_pdf(file_bytes)
-            client = self._identify_pdf_client(raw_text)
+            client = self._identify_pdf_client(raw_text, filename)
 
             if client == "topre":
                 return self._parse_topre(raw_text, raw_tables)
             elif client == "ytec":
                 return self._parse_ytec(raw_text, raw_tables)
+            elif client == "gemo":
+                return self._parse_gemo(raw_text)
             else:
                 raise ValueError(
-                    f"PDF no reconocido. Clientes soportados: Topre, Y-tec. "
+                    f"PDF no reconocido. Clientes soportados: Topre, Y-tec, GEMO. "
                     f"Palabras clave encontradas: {raw_text[:200]!r}"
                 )
 
@@ -111,6 +115,16 @@ class DocumentDetector:
 
         header, records = YtecParser().parse(raw_text, raw_tables)
         logger.info("DocumentDetector → cliente=Y-tec | %d registros", len(records))
+        return header, records
+
+    def _parse_gemo(
+        self,
+        raw_text: str,
+    ) -> tuple[MosHeader, list[MosRecord]]:
+        from pdf.gemo_parser import GemoParser
+
+        header, records = GemoParser().parse(raw_text)
+        logger.info("DocumentDetector → cliente=GEMO | %d registros", len(records))
         return header, records
 
     def _parse_sriko(
@@ -157,14 +171,22 @@ class DocumentDetector:
         return "\n\n".join(text_parts), raw_tables
 
     @staticmethod
-    def _identify_pdf_client(text: str) -> str:
+    def _identify_pdf_client(text: str, filename: str = "") -> str:
         """
-        Devuelve 'topre', 'ytec' o 'unknown' según palabras clave.
+        Devuelve 'topre', 'ytec', 'gemo' o 'unknown' según palabras clave.
         """
-        lower = text.lower()
+        lower = (text + " " + filename).lower()
         topre_score = sum(1 for kw in _TOPRE_KEYWORDS if kw in lower)
         ytec_score  = sum(1 for kw in _YTEC_KEYWORDS  if kw in lower)
+        gemo_score  = sum(1 for kw in _GEMO_KEYWORDS  if kw in lower)
 
-        if topre_score == 0 and ytec_score == 0:
+        scores = {
+            "topre": topre_score,
+            "ytec":  ytec_score,
+            "gemo":  gemo_score,
+        }
+
+        best_client = max(scores, key=scores.get)
+        if scores[best_client] == 0:
             return "unknown"
-        return "topre" if topre_score >= ytec_score else "ytec"
+        return best_client
