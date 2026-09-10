@@ -61,17 +61,20 @@ class PoLineGenerator:
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        # Una fila por part number único (preservar orden)
-        seen: dict[str, MosRecord] = {}
+        # Una fila por combinación única de (PO No, Part No) preservando orden
+        seen: dict[tuple[str, str], MosRecord] = {}
         for rec in records:
-            if rec.part_number and rec.part_number not in seen:
-                seen[rec.part_number] = rec
+            if not rec.part_number:
+                continue
+            po_key = rec.po_number or header.po_number or ""
+            key = (po_key, rec.part_number)
+            if key not in seen:
+                seen[key] = rec
         unique_parts = list(seen.values())
 
         # Resolver Customer Part No en bulk (una sola query)
-        part_map = self._resolver.resolve(
-            [r.part_number for r in unique_parts]
-        )
+        part_numbers = list(dict.fromkeys(r.part_number for r in unique_parts))
+        part_map = self._resolver.resolve(part_numbers)
 
         today     = date.today()
         po_date   = today.strftime("%m/%d/%Y")
@@ -142,7 +145,7 @@ class PoLineGenerator:
         values = [""] * len(_HEADERS)
 
         values[0]  = header.customer     or ""   # Customer Code
-        values[1]  = header.po_number    or ""   # PO No
+        values[1]  = rec.po_number or header.po_number or ""   # PO No
         values[4]  = po_date                     # PO Date
         values[8]  = header.ubication    or ""   # Approved Ship To ← BD
         values[10] = customer_part_no            # Customer Part No ← BD

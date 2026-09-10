@@ -70,27 +70,31 @@ class OrderPriceGenerator:
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        # Una fila por part number único
-        unique_parts: list[str] = []
-        seen: set[str] = set()
+        # Una fila por combinación única de (PO No, Part No) preservando orden
+        seen: dict[tuple[str, str], MosRecord] = {}
         for rec in records:
-            if rec.part_number and rec.part_number not in seen:
-                unique_parts.append(rec.part_number)
-                seen.add(rec.part_number)
+            if not rec.part_number:
+                continue
+            po_key = rec.po_number or header.po_number or ""
+            key = (po_key, rec.part_number)
+            if key not in seen:
+                seen[key] = rec
+        unique_records = list(seen.values())
 
-        # Consulta bulk (una sola query)
+        # Consulta bulk (una sola query para partes únicas)
+        unique_parts = list(dict.fromkeys(r.part_number for r in unique_records))
         prices = self._price_repo.get_bulk(unique_parts)
         part_map = self._resolver.resolve(unique_parts)
 
         # Construir y escribir XML
-        workbook = self._build_xml(header, unique_parts, prices, part_map)
+        workbook = self._build_xml(header, unique_records, prices, part_map)
 
         filename = f"Order_Price_Upload_{datetime.now().strftime('%Y%m%d')}.xml"
         out_path = out_dir / filename
 
         self._write(workbook, out_path)
 
-        logger.info("Order Price XML → %s  (%d filas)", out_path, len(unique_parts))
+        logger.info("Order Price XML → %s  (%d filas)", out_path, len(unique_records))
         return out_path
 
     # ── Escritura (idéntica a PoLineGenerator) ────────────────────────────────
@@ -115,10 +119,10 @@ class OrderPriceGenerator:
 
     def _build_xml(
         self,
-        header:       MosHeader,
-        unique_parts: list[str],
-        prices:       dict,
-        part_map:     dict[str, str],
+        header:         MosHeader,
+        unique_records: list[MosRecord],
+        prices:         dict,
+        part_map:       dict[str, str],
     ) -> ET.Element:
         for prefix, uri in _NS_MAP.items():
             ET.register_namespace(prefix, uri)
@@ -163,9 +167,21 @@ class OrderPriceGenerator:
             data.text = h
 
         # Filas de datos
-        for part_no in unique_parts:
+        seen_primary_parts: set[str] = set()
+        for rec in unique_records:
+            part_no = rec.part_number
             customer_part_no = part_map.get(part_no, part_no)
-            self._add_data_row(table, header, part_no, prices.get(part_no), customer_part_no)
+            is_primary = part_no not in seen_primary_parts
+            seen_primary_parts.add(part_no)
+            self._add_data_row(
+                table,
+                header,
+                part_no,
+                prices.get(part_no),
+                customer_part_no,
+                rec,
+                is_primary=is_primary,
+            )
 
         return workbook
 
@@ -176,6 +192,8 @@ class OrderPriceGenerator:
         part_no:          str,
         price_rec,
         customer_part_no: str,
+        rec:              MosRecord | None = None,
+        is_primary:       bool = True,
     ) -> None:
         price_str    = str(price_rec.price)          if price_rec else ""
         eff_date_str = (
@@ -183,9 +201,11 @@ class OrderPriceGenerator:
             if price_rec and price_rec.effective_date else ""
         )
 
+        po_no = (rec.po_number if rec and rec.po_number else "") or header.po_number or ""
+
         values = [
             header.customer  or "",  # Customer
-            header.po_number or "",  # Customer PO No
+            po_no,                   # Customer PO No
             customer_part_no,        # Customer Part No ← resolved from DB
             "",                      # Customer Part Revision
             price_str,               # Price
@@ -200,7 +220,7 @@ class OrderPriceGenerator:
             "",                      # Master Price
             "1",                     # Active
             "Ea",                    # Unit
-            "1",                     # Primary Price
+            "1" if is_primary else "0",  # Primary Price (1 solo para el primer PO de cada part_no, 0 para los demás)
             "",                      # Currency
         ]
 
